@@ -1,0 +1,42 @@
+# Copyright (C) 2022 - present Juergen Zimmermann, Hochschule Karlsruhe
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+# "." am Anfang bezeichnet den Top-Level Namensraum bei Helm
+
+apiVersion: v1
+# https://kubernetes.io/docs/concepts/configuration/configmap
+kind: ConfigMap
+metadata:
+  name: {{ include "flug.fullname" . }}
+  namespace: {{ .Values.namespace }}
+data:
+  # Key-Value-Paare (hier: fuer die Umgebungsvariable)
+  TZ: Europe/Berlin
+  LANG: de_DE.utf8
+  SPRING_MAIL_HOST: {{ .Values.mailhost }}
+  SPRING_MAIL_PORT: "1025"
+  MAIL_HOST: {{ .Values.mailhost }}
+  SPRING_PROFILES_DEFAULT: {{ .Values.profile }}
+  SPRING_PROFILES_ACTIVE: {{ .Values.profile }}
+  SERVER_TOMCAT_BASEDIR: /tmp
+  LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_MAIL: debug
+  LOGGING_LEVEL_COM_ACME_FLUG_MAIL: trace
+  SPRING_DATASOURCE_URL: {{ .Values.datasource.url }}
+  SPRING_DATASOURCE_USERNAME: {{ .Values.datasource.username }}
+  SPRING_FLYWAY_CLEAN_DISABLED: {{ quote .Values.flyway.clean.disabled }}
+
+  SPRING_FLYWAY_TABLESPACE: {{ .Values.flyway.tablespace }}
+
+  MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: {{ .Values.zipkin.endpoint }}

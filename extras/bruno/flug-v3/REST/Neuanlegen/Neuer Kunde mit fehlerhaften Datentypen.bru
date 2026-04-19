@@ -1,0 +1,56 @@
+meta {
+  name: Neuer Flug mit fehlerhaften Datentypen
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{apiUrl}}
+  body: json
+  auth: inherit
+}
+
+headers {
+  ~:
+}
+
+body:json {
+  {
+    "name": 1000,
+    "baujahr": "2023-01-01",
+    "kapazitaet": 5000,
+    "typ": "X",
+    "hafen": {
+      "name": "Hamburg",
+      "land": "Deutschland"
+    },
+    "crewList": [
+      {
+        "vorname": "Murat",
+        "nachname": "Yahsi",
+        "rolle": "Kapitaen"
+      },
+      {
+        "vorname": "Ahmet",
+        "nachname": "Yilmaz",
+        "rolle": "Matrose"
+      }
+    ],
+    "ausstattungen": [
+      "GPS",
+      "POOL",
+      "RADAR"
+    ],
+    "username": "user",
+    "password": "p"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

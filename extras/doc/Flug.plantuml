@@ -1,0 +1,75 @@
+' Copyright (C) 2025 - present Juergen Zimmermann, Hochschule Karlsruhe
+'
+' This program is free software: you can redistribute it and/or modify
+' it under the terms of the GNU General Public License, Version 3 or
+' (at your option) any later version.
+'
+' This program is distributed in the hope that it will be useful,
+' but WITHOUT ANY WARRANTY; without even the implied warranty of
+' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+' GNU General Public License for more details.
+'
+' You should have received a copy of the GNU General Public License
+' along with this program.  If not, see <https://www.gnu.org/licenses/>.
+@startuml Flug
+
+skinparam classAttributeIconSize 0
+' skinparam monochrome true
+
+package java {
+    package util {
+        class UUID
+        interface List<T>
+    }
+
+    package time {
+        class LocalDateTime
+        class LocalDate
+    }
+}
+
+package com.acme.flug.entity #DDDDDD {
+
+    class Flugzeug {
+        hersteller: String
+        modell: String
+        sitzplaetze: int
+        reichweiteKm: double
+    }
+
+    class Passagier {
+        id: UUID
+        vorname: String
+        nachname: String
+        geburtsdatum: LocalDate
+        sitzplatz: String
+    }
+
+    class Flug << entity >> {
+        id: UUID
+        startOrt: String
+        zielOrt: String
+        abflugZeit: LocalDateTime
+        ankunftZeit: LocalDateTime
+        flugzeug: Flugzeug
+        passagiere: List<Passagier>
+    }
+
+    ' Beziehungen wie bei Zimmermann (Aggregation)
+    Flug *--> "1" Flugzeug : flugzeug
+    Flug *--> "0..*" Passagier : passagiere
+
+    ' Externe Typen wie bei Flug-Diagramm
+    Flug ..> UUID
+    Flug ..> LocalDateTime
+    Flug ..> List
+
+    Passagier ..> UUID
+    Passagier ..> LocalDate
+}
+
+hide empty members
+
+footer (c) Jürgen Zimmermann
+
+@enduml

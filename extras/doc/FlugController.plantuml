@@ -1,0 +1,75 @@
+' Copyright (C) 2025 - present Juergen Zimmermann
+'
+' GPL-Hinweis wie in SWA-Vorlage
+@startuml FlugController
+
+skinparam classAttributeIconSize 0
+
+package org.springframework {
+    package web.bind.annotation {
+        annotation RestController
+        annotation RequestMapping
+        annotation GetMapping
+        annotation PathVariable
+        annotation RequestParam
+    }
+    package util {
+        class MultiValueMap<K,V>
+    }
+}
+
+package java.util {
+    class UUID
+    interface Collection<T>
+}
+
+package org.slf4j {
+    interface Logger
+    class LoggerFactory
+}
+
+package io.swagger.v3.oas.annotations {
+    annotation OpenAPIDefinition
+    package info {
+        annotation Info
+    }
+}
+
+package com.acme.flug {
+    package entity {
+        class Flug << entity >>
+    }
+
+    package service {
+        class FlugService << control >> << @Service >>
+    }
+
+    package controller #DDDDDD {
+        class FlugController << boundary >> << @RestController >> << @RequestMapping >> {
+            ~ @GetMapping getById(@PathVariable id: UUID): Flug
+            ~ @GetMapping get(@RequestParam queryparam: MultiValueMap<String, String>): Collection<Flug>
+        }
+
+        FlugController o-right-> "1" FlugService : service
+
+        FlugController ..> Flug
+        FlugController ..> MultiValueMap
+        FlugController ..> UUID
+        FlugController ..> Collection
+
+        FlugController .up.> RestController
+        FlugController .up.> RequestMapping
+        FlugController .up.> GetMapping
+        FlugController .up.> PathVariable
+        FlugController .up.> RequestParam
+
+        FlugController .up.> OpenAPIDefinition
+        FlugController .up.> Info
+    }
+}
+
+hide empty members
+
+footer (c) Juergen Zimmermann
+
+@enduml

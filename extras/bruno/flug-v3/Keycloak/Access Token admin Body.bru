@@ -1,0 +1,36 @@
+meta {
+  name: Access Token admin Body
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{oidcTokenUrl}}
+  body: formUrlEncoded
+  auth: inherit
+}
+
+body:form-urlencoded {
+  username: admin
+  password: p
+  grant_type: password
+  client_id: {{clientId}}
+  client_secret: {{clientSecret}}
+}
+
+vars:pre-request {
+  clientId: spring-client
+  clientSecret: aVRTBzGsHGmSTJmty7hCfXxqMAgdkYqA
+}
+
+assert {
+  res.status: eq 200
+  res.body.access_token: isString
+  res.body.access_token: matches .\..+\..+
+  res.body.expires_in: matches 1800
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,18 @@
+# https://editorconfig.org
+# https://github.com/editorconfig/editorconfig/wiki/EditorConfig-Properties
+# https://www.jetbrains.com/help/idea/editorconfig.html
+
+# oberste EditorConfig-Datei
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_size = 2
+indent_style = space
+insert_final_newline = true
+max_line_length = 120
+trim_trailing_whitespace = true
+
+[*.{java,kt,sql,kts,tf,json,ts,plantuml,xml,ps1,graphqls}]
+indent_size = 4

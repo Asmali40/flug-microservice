@@ -1,0 +1,86 @@
+<?xml version="1.0"?>
+
+<ruleset name="Custom Rules"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    <!-- https://docs.pmd-code.org/latest/pmd_userdocs_making_rulesets.html -->
+    <description>PMD-Regeln für Softwarearchitektur</description>
+
+    <!-- https://docs.pmd-code.org/latest/pmd_rules_java_bestpractices.html -->
+    <rule ref="category/java/bestpractices.xml">
+        <exclude name="AccessorClassGeneration"/>
+        <exclude name="AccessorMethodGeneration"/>
+        <exclude name="GuardLogStatement"/>
+        <exclude name="JUnit4SuitesShouldUseSuiteAnnotation"/>
+        <exclude name="JUnitUseExpected"/>
+        <exclude name="LiteralsFirstInComparisons"/>
+        <exclude name="UnitTestAssertionsShouldIncludeMessage"/>
+        <exclude name="UnitTestContainsTooManyAsserts"/>
+    </rule>
+
+    <!-- https://docs.pmd-code.org/latest/pmd_rules_java_codestyle.html -->
+    <rule ref="category/java/codestyle.xml/LongVariable">
+        <properties>
+            <property name="minimum" value="32"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/codestyle.xml/ShortMethodName">
+        <properties>
+            <property name="minimum" value="2"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/codestyle.xml/ShortVariable">
+        <properties>
+            <property name="minimum" value="2"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/codestyle.xml/TooManyStaticImports">
+        <properties>
+            <property name="maximumStaticImports" value="25"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/codestyle.xml">
+        <exclude name="CallSuperInConstructor"/>
+        <exclude name="CommentDefaultAccessModifier"/>
+        <exclude name="OnlyOneReturn"/>
+        <exclude name="UnnecessaryConstructor"/>
+        <exclude name="UseExplicitTypes"/>
+    </rule>
+
+    <!-- https://docs.pmd-code.org/latest/pmd_rules_java_design.html -->
+    <rule ref="category/java/design.xml/ExcessiveImports">
+        <properties>
+            <property name="minimum" value="100"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/ExcessiveParameterList">
+        <properties>
+            <property name="minimum" value="20"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/TooManyFields">
+        <properties>
+            <property name="maxfields" value="20"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/TooManyMethods">
+        <properties>
+            <property name="maxmethods" value="15"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml">
+        <exclude name="DataClass"/>
+        <exclude name="LawOfDemeter"/>
+        <exclude name="LoosePackageCoupling"/>
+    </rule>
+
+    <!-- https://docs.pmd-code.org/latest/pmd_rules_java_errorprone.html -->
+    <rule ref="category/java/errorprone.xml"/>
+
+    <!-- https://docs.pmd-code.org/latest/pmd_rules_java_performance.html -->
+    <rule ref="category/java/performance.xml"/>
+
+    <!-- https://docs.pmd-code.org/latest/pmd_rules_java_security.html -->
+    <rule ref="category/java/security.xml"/>
+</ruleset>

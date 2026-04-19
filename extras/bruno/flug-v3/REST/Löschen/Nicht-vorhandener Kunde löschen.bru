@@ -1,0 +1,28 @@
+meta {
+  name: Nicht-vorhandener Flug löschen
+  type: http
+  seq: 2
+}
+
+delete {
+  url: {{apiUrl}}/:id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: ffffffff-ffff-ffff-ffff-ffffffffffff
+}
+
+headers {
+  If-Match: "0"
+}
+
+assert {
+  res.status: eq 204
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

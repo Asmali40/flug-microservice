@@ -1,0 +1,44 @@
+out
+build
+target
+.gradle
+
+# IDE / editor
+*.idea
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+.vscode/
+
+# Build / generated
+src/main/resources/.reloadtrigger
+extras/kubernetes/postgres/.kpt-pipeline
+
+# Temp / logs
+*.log
+*.tmp
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Sensitive / secret files
+*.env
+.env.*
+*.pem
+*.crt
+*.key
+*.p12
+*.jks
+*.pfx
+*.keystore
+*.tfstate
+*.tfstate.backup
+*.tfvars
+
+# Project-specific sensitive paths
+extras/compose/db/postgres/db_password.txt
+extras/compose/keycloak/keycloak-truststore.p12

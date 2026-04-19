@@ -1,0 +1,44 @@
+meta {
+  name: Flug 30 ohne Token ändern
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{apiUrl}}/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 00000000-0000-0000-0000-000000000030
+}
+
+headers {
+  If-Match: "1"
+}
+
+body:json {
+  {
+    "nachname": "Testput",
+    "email": "admin@acme.com",
+    "kategorie" : 1,
+    "hasNewsletter": true,
+    "geburtsdatum": "2024-01-31",
+    "homepage": "https://www.test.de",
+    "geschlecht": "W",
+    "familienstand": "L",
+    "username": "alpha3",
+    "password": "p"
+  }
+
+}
+
+assert {
+  res.status: eq 403
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

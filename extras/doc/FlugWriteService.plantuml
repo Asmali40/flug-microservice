@@ -1,0 +1,51 @@
+' Copyright (C) 2025 - present
+' Juergen Zimmermann, Hochschule Karlsruhe
+'
+@startuml FlugWriteService
+
+skinparam classAttributeIconSize 0
+
+package org.springframework.stereotype {
+    annotation Service
+}
+
+package org.slf4j {
+    interface Logger
+    class LoggerFactory
+}
+
+package java.util {
+    class UUID
+}
+
+package com.acme.flug {
+    package entity {
+        class Flug << entity >>
+    }
+
+    package repository {
+        class FlugRepository << gateway >>
+    }
+
+    package service #DDDDDD {
+        class FlugWriteService << control >> << @Service >> {
+            + create(flug: Flug): Flug
+            + update(flug: Flug, id: UUID): void
+            + deleteById(id: UUID): void
+        }
+
+        FlugWriteService o-right-> FlugRepository : repo
+
+        FlugWriteService ..> Flug
+        FlugWriteService ..> UUID
+
+        FlugWriteService ..> Logger
+        FlugWriteService ..> LoggerFactory
+    }
+}
+
+hide empty members
+
+footer (c) Juergen Zimmermann
+
+@enduml

@@ -1,0 +1,153 @@
+# syntax=docker.io/docker/dockerfile-upstream:1.20.0
+# check=error=true
+
+# Copyright (C) 2020 - present Juergen Zimmermann, Hochschule Karlsruhe
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+# Aufruf:   docker build --tag juergenzimmermann/kunde:2025.10.3-eclipse-noble .
+#               ggf. --progress=plain
+#               ggf. --no-cache
+#           Get-Content Dockerfile | docker run --rm --interactive hadolint/hadolint:v2.14.0-debian
+#           bash als Shell
+#           docker save juergenzimmermann/kunde:2025.10.3-eclipse-noble > kunde.tar
+
+# https://docs.docker.com/engine/reference/builder/#syntax
+# https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/reference.md
+# https://hub.docker.com/r/docker/dockerfile
+# https://docs.docker.com/build/building/multi-stage
+# https://github.com/moby/buildkit/releases
+# https://containers.gitbook.io/build-containers-the-hard-way
+
+# ARG: "build-time" Variable
+# ENV: "build-time" und "runtime" Variable
+ARG JAVA_VERSION=25.0.1_8
+ARG UBUNTU_VERSION=noble
+
+# ---------------------------------------------------------------------------------------
+# S t a g e :   b u i l d e r
+#
+#   "Eclipse Temurin" aus "Eclipse Adoptium Project" als JDK https://github.com/adoptium/containers
+#   Ubuntu "Noble Numbat" 24.04 LTS (Long Term Support, Juni 2029 / 2036)
+#   https://ubuntu.com/about/release-cycle https://wiki.ubuntu.com/Releases
+#   Docker-Image fuer OpenJDK ist *deprecated*
+#   Amazon Coretto: nur JDK, nicht JRE (s.u.)
+#   SapMachine: nur JDK, nicht JRE (s.u.)
+#   JAR bauen mit eigenem Code und Dependencies z.B. Spring, Jackson
+# ---------------------------------------------------------------------------------------
+FROM eclipse-temurin:${JAVA_VERSION}-jdk-${UBUNTU_VERSION} AS builder
+#FROM bellsoft/liberica-openjdk-debian:${JAVA_VERSION} AS builder
+
+# "working directory" fuer die Docker-Kommandos RUN, ENTRYPOINT, CMD, COPY und ADD
+WORKDIR /builder
+
+# JAR-Datei mit den Schichten ("layers") erstellen und aufbereiten bzw. entpacken
+# https://docs.docker.com/reference/dockerfile/#run---mounttypecache
+
+# Gradle:
+#RUN --mount=type=bind,source=build.gradle.kts,target=build.gradle.kts \
+#    --mount=type=bind,source=gradle.properties,target=gradle.properties \
+#    --mount=type=bind,source=gradlew,target=gradlew \
+#    --mount=type=bind,source=settings.gradle.kts,target=settings.gradle.kts \
+#    --mount=type=bind,source=gradle,target=gradle \
+#    --mount=type=bind,source=src,target=src \
+#    --mount=type=cache,target=/root/.gradle \
+#    ./gradlew --no-configuration-cache --no-daemon --no-watch-fs -DuseTracing=false bootJar
+#ARG JAR_DIR=build/libs
+
+# Maven:
+RUN --mount=type=bind,source=pom.xml,target=pom.xml \
+    --mount=type=bind,source=mvnw,target=mvnw \
+    --mount=type=bind,source=.mvn,target=.mvn \
+    --mount=type=bind,source=src,target=src \
+    --mount=type=cache,target=/root/.m2 \
+    ./mvnw package spring-boot:repackage -Dmaven.test.skip=true -Dspring-boot.build-image.skip=true
+ARG JAR_DIR=target
+
+# java --help
+# java --help-extra
+RUN <<EOF
+java -Djarmode=tools -jar ${JAR_DIR}/*.jar extract
+
+mv ./*-2025.10.3 application
+mv application/*-2025.10.3.jar application/application.jar
+
+# Gradle:
+rm -rf build
+
+# Maven:
+#rm -rf target
+EOF
+
+# ---------------------------------------------------------------------------------------
+# S t a g e   f i n a l
+#
+#   JRE statt JDK
+#   Dependencies, z.B. Spring, Jackson
+#   Loader fuer Spring Boot
+#   Eigener uebersetzter Code
+# ---------------------------------------------------------------------------------------
+
+FROM eclipse-temurin:${JAVA_VERSION}-jre-${UBUNTU_VERSION} AS final
+
+# Anzeige bei "docker inspect ..."
+# https://specs.opencontainers.org/image-spec/annotations
+# https://spdx.org/licenses
+# https://snyk.io/de/blog/how-and-when-to-use-docker-labels-oci-container-annotations
+# MAINTAINER ist deprecated https://docs.docker.com/engine/reference/builder/#maintainer-deprecated
+LABEL org.opencontainers.image.title="kunde" \
+      org.opencontainers.image.description="Microservice kunde v1 mit Basis-Image Eclipse Temurin und Ubuntu Noble" \
+      org.opencontainers.image.version="2025.10.3-eclipse-noble" \
+      org.opencontainers.image.licenses="GPL-3.0-or-later" \
+      org.opencontainers.image.vendor="Juergen Zimmermann" \
+      org.opencontainers.image.authors="Juergen.Zimmermann@h-ka.de" \
+      org.opencontainers.image.base.name="eclipse-temurin:LATEST_VERSION-jre-noble"
+
+# gleiches Basis-Verzeichnis wie bei "Cloud Native Buildpacks": Mounting von private-key.pem, certificate.crt
+WORKDIR /workspace
+
+# "here document" wie in einem Shellscipt
+RUN <<EOF
+set -eux
+apt-get update
+apt-get upgrade --yes
+# https://unix.stackexchange.com/questions/217369/clear-apt-get-list
+apt-get autoremove -y
+apt-get clean -y
+rm -rf /var/lib/apt/lists/*
+# https://manpages.debian.org/trixie/passwd/groupadd.html
+# https://manpages.debian.org/trixie/adduser/addgroup.html
+#groupadd --gid 1000 ubuntu
+# https://manpages.debian.org/trixie/passwd/useradd.html
+# https://manpages.debian.org/trixie/adduser/adduser.html
+#useradd --uid 1000 --gid ubuntu --no-create-home ubuntu
+chown -R ubuntu:ubuntu /workspace
+EOF
+
+# ADD hat mehr Funktionalitaet als COPY, z.B. auch Download von externen Dateien
+# ggf. auch /builder/snapshot-dependencies/
+ARG BUILDER_APPLICATION_DIR=/builder/application
+COPY --from=builder --chown=ubuntu:ubuntu ${BUILDER_APPLICATION_DIR}/lib/ ./lib/
+COPY --from=builder --chown=ubuntu:ubuntu ${BUILDER_APPLICATION_DIR}/application.jar ./application.jar
+
+USER ubuntu:ubuntu
+EXPOSE 8443
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=3s --retries=1 \
+  CMD wget -qO- --no-check-certificate https://localhost:8443/actuator/health/ | grep UP || exit 1
+
+# Bei CMD statt ENTRYPOINT kann das Kommando bei "docker run ..." ueberschrieben werden
+# Delimitter bei CLASSPATH: ":" bei Unix und ";" bei Windows
+ENTRYPOINT ["java", "--enable-preview", "-classpath", "application.jar:lib/*.jar:.", "com.acme.kunde.Application"]

@@ -1,0 +1,66 @@
+meta {
+  name: Neuer Flug mit ungültigen Daten
+  type: graphql
+  seq: 2
+}
+
+post {
+  url: {{graphqlUrl}}
+  body: graphql
+  auth: inherit
+}
+
+body:graphql {
+  mutation {
+    create(
+      input: {
+        nachname: "?!:"
+        email: "email"
+        kategorie: 11
+        hasNewsletter: true
+        geburtsdatum: "2024-01-31"
+        homepage: "https://acme.com"
+        geschlecht: WEIBLICH
+        familienstand: LEDIG
+        adresse: {
+          plz: "1"
+          ort: "Testort"
+        }
+        rechnungen: [{
+          betrag: "1"
+          waehrung: "EUR"
+        }]
+        interessen: [SPORT, REISEN]
+        username: "test"
+        password: "Pass123."
+      }
+    ) {
+      id
+    }
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.headers['content-type']: eq application/json
+}
+
+tests {
+  test('Body mit Fehler', () => {
+    const body = res.getBody();
+    const { data, errors } = body;
+    expect(data.create).to.be.null;
+    expect(errors).to.be.an('array').that.has.length(4);
+    errors.forEach(error => {
+      const { path, extensions } = error;
+      expect(path).to.be.an('array').that.is.not.empty;
+      expect(path[0]).to.be.equal('input');
+      expect(extensions.classification).to.be.equal('BAD_REQUEST');
+    });
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

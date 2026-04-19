@@ -1,0 +1,28 @@
+meta {
+  name: OpenAPI YAML
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v3/api-docs.yaml
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test('Body', () => {
+    const body = res.getBody({ raw: true });
+    expect(body).to.match(/^openapi: 3.1.0/u);
+    expect(body).to.match(/url: https:\/\/localhost:8443/u);
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

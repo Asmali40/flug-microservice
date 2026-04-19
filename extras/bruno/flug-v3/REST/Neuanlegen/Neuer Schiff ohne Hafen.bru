@@ -1,0 +1,60 @@
+meta {
+  name: Neuer Flug ohne Hafen
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{apiUrl}}
+  body: json
+  auth: inherit
+}
+
+headers {
+  ~:
+}
+
+body:json {
+  {
+    "name": "Titanic-New",
+    "baujahr": "2023-01-01",
+    "kapazitaet": 5000,
+    "typ": "X",
+    "crewList": [
+      {
+        "vorname": "Murat",
+        "nachname": "Yahsi",
+        "rolle": "Kapitaen"
+      },
+      {
+        "vorname": "Ahmet",
+        "nachname": "Yilmaz",
+        "rolle": "Matrose"
+      }
+    ],
+    "ausstattungen": [
+      "GPS",
+      "POOL",
+      "RADAR"
+    ],
+    "username": "user",
+    "password": "p"
+  }
+}
+
+assert {
+  res.status: eq 422
+  res.headers['content-type']: eq application/problem+json
+  res.body.detail: isString
+  res.body.detail: contains nachname:
+  res.body.detail: contains email:
+  res.body.detail: contains kategorie:
+  res.body.detail: contains geburtsdatum:
+  res.body.detail: contains interessen:
+  res.body.detail: contains adresse:
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

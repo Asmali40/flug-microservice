@@ -1,0 +1,43 @@
+meta {
+  name: Nicht-vorhandene Emailadresse
+  type: graphql
+  seq: 7
+}
+
+post {
+  url: {{graphqlUrl}}
+  body: graphql
+  auth: inherit
+}
+
+headers {
+  Accept: application/graphql-response+json
+}
+
+body:graphql {
+  query ($email: String! = "Nicht.Vorhanden@acme.com") {
+    fluege(input: {email: $email})  {
+      id
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "email": "Nicht.Vorhanden@acme.com"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.headers['content-type']: eq application/graphql-response+json
+  res.body.errors.length: eq 1
+  res.body.errors[0].message: contains email
+  res.body.errors[0].extensions.classification: eq NOT_FOUND
+  res.body.data.fluege: isNull
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

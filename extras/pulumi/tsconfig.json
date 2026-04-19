@@ -1,0 +1,53 @@
+{
+    // https://www.typescriptlang.org/tsconfig
+    // https://github.com/tsconfig/bases/blob/main/bases/strictest.json
+    // https://github.com/tsconfig/bases/#node-24-tsconfigjson
+    // https://stackoverflow.com/questions/63742790/unable-to-import-esm-ts-module-in-node/65163089#65163089
+    // https://2ality.com/2025/01/tsconfig-json.html
+    "extends": ["@tsconfig/strictest/tsconfig", "@tsconfig/node24/tsconfig"],
+    "ts-node": {
+        "esm": true,
+        "module": "es2024"
+        // "experimentalSpecifierResolution": "node"
+        // "transpileOnly": true,
+        // "files": true,
+    },
+    "compilerOptions": {
+        // "rootDir": ".",
+        "outDir": "bin",
+        "lib": ["ES2024"],
+        // uebersetzter JS-Code im Hinblick auf Module. "NodeNext" erfordert dasselbe fuer "moduleResolution"
+        // "module": "nodenext", // node24: entspricht "node16"
+        // Wie werden zu importierende Module im Dateisystem gefunden?
+        // "moduleResolution": "nodenext", // node24: entspricht "node16"
+        "moduleDetection": "force", // default: "auto"
+        "declaration": true,
+        "removeComments": true,
+        "experimentalDecorators": true,
+        "allowSyntheticDefaultImports": true,
+        "sourceMap": true,
+        "incremental": true,
+        // "skipLibCheck": true, // strictest, node24: wegen @nestjs/graphql und @nestjs/apollo
+        // "allowUnreachableCode": false, // strictest: return bei then-else und try-catch
+        // "allowUnusedLabels": false, // strictest: Labels muessen auch benutzt werden
+        // "esModuleInterop": true, // strictest, node24: Kompatibilitaet zwischen CommonJS und ES Modulen
+        // "exactOptionalPropertyTypes": true, // strictest: bei optionalen Properties ggf. explizit undefined spezifizieren
+        "forceConsistentCasingInFileNames": true, // Gross-/Kleinschreibung bei Dateinamen
+        "noErrorTruncation": true,
+        // "noFallthroughCasesInSwitch": true, // strictest: "break" muss bei switch vorhanden sein
+        // "noImplicitAny": true, // Fehler bei implizitem Typ "any", default bei Option "strict"
+        // "noImplicitOverride": true, // strictest: Schluesselwort "override"
+        // "noImplicitReturns": true, // strictest: bei jedem Code-Pfad muss es "return" geben
+        // "noImplicitThis": true, // Fehler bei this mit implizitem "any", default bei Option "strict"
+        // "noUncheckedIndexedAccess": true, // strictest: undefined bei Resultaten fuer Index-Signaturen
+        // "noUnusedLocals": true, // strictest: keine nicht-benutzten lokalen Variablen
+        // "noUnusedParameters": true, // strictest: keine nicht-benutzen Parameter
+        // "strict": true, // strictest: alle "strict"-Optionen aktivieren
+
+        "erasableSyntaxOnly": true // NICHT: enum, parameter properties in constructor(), namespace, import aliases
+        // "useUnknownInCatchVariables": true // unknown als default-Typ bei catch-Klauseln, default bei strict
+    },
+    "files": [
+        "index.ts"
+    ]
+}

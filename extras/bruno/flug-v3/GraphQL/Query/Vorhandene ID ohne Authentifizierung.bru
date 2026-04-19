@@ -1,0 +1,43 @@
+meta {
+  name: Vorhandene ID ohne Authentifizierung
+  type: graphql
+  seq: 2
+}
+
+post {
+  url: {{graphqlUrl}}
+  body: graphql
+  auth: none
+}
+
+headers {
+  Accept: application/graphql-response+json
+}
+
+body:graphql {
+  query ($id: ID! = "00000000-0000-0000-0000-000000000001") {
+    flug(id: $id) {
+      nachname
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": "00000000-0000-0000-0000-000000000001"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.headers['content-type']: eq application/graphql-response+json
+  res.body.errors.length: eq 1
+  res.body.errors[0].message: eq Unauthorized
+  res.body.errors[0].path.length: eq 1
+  res.body.errors[0].path[0]: eq flug
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

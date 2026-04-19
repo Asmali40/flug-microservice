@@ -1,0 +1,28 @@
+meta {
+  name: Ohne Token
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{apiUrl}}/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 00000000-0000-0000-0000-000000000001
+}
+
+headers {
+  X-Version: 3.0.0
+}
+
+assert {
+  res.status: eq 403
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

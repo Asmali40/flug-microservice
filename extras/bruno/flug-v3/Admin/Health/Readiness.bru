@@ -1,0 +1,21 @@
+meta {
+  name: Readiness
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{healthUrl}}/readiness
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq UP
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

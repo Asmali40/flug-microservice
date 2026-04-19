@@ -1,0 +1,30 @@
+meta {
+  name: Flug 50 löschen
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{apiUrl}}/:id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 00000000-0000-0000-0000-000000000050
+}
+
+headers {
+  If-Match: "0"
+}
+
+assert {
+  res.status: eq 204
+  res.body: isString
+  res.body: isEmpty
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

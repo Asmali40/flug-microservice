@@ -1,0 +1,28 @@
+meta {
+  name: Nicht-vorhandene ID 9999
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{apiUrl}}/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 99999999-9999-9999-9999-999999999999
+}
+
+headers {
+  X-Version: 3.0.0
+}
+
+assert {
+  res.status: eq 404
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,45 @@
+meta {
+  name: Flug Ever-Given ändern
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{apiUrl}}/:id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 00000000-0000-0000-0000-000000000030
+}
+
+headers {
+  If-Match: "0"
+}
+
+body:json {
+  {
+      "name": "Ever-Given-Updated",
+      "baujahr": "2018-05-25",
+      "kapazitaet": 20000,
+      "typ": "CONTAINER",
+      "hafen": {
+          "name": "Hamburg",
+          "land": "Deutschland"
+      },
+      "username": "user"
+  }
+}
+
+assert {
+  res.status: eq 204
+  res.headers['etag']: matches ^"\d+"$
+  res.body: isString
+  res.body: isEmpty
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

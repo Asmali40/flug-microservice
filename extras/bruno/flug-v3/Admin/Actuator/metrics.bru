@@ -1,0 +1,54 @@
+meta {
+  name: metrics
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{actuatorUrl}}/metrics
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.names: isArray
+  res.body.names: contains get-by-id
+}
+
+script:pre-request {
+  const https = require('node:https');
+  
+  const httpsAgent = new https.Agent({
+   rejectUnauthorized: false,
+  });
+  
+  const tokenUrl = bru.getCollectionVar('tokenUrl');
+  const username = bru.getEnvVar('username');
+  const password = bru.getEnvVar('password');
+  
+  const response = await bru.sendRequest({
+    method: 'POST',
+    url: tokenUrl,
+    data: { username, password },
+    httpsAgent,
+  });
+  const token = response.data.access_token;
+  
+  const apiUrl = bru.getFolderVar('apiUrl');
+  await bru.sendRequest({
+    method: 'GET',
+    url: `${apiUrl}/00000000-0000-0000-0000-000000000001`,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+    },
+    httpsAgent,
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

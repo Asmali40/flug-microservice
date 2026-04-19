@@ -1,0 +1,13 @@
+meta {
+  name: Admin
+  seq: 1
+}
+
+auth {
+  mode: inherit
+}
+
+vars:pre-request {
+  actuatorUrl: {{baseUrl}}/actuator
+  healthUrl: {{actuatorUrl}}/health
+}

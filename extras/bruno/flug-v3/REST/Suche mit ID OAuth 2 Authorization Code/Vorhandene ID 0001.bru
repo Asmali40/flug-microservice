@@ -1,0 +1,31 @@
+meta {
+  name: Vorhandene ID 0001
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{apiUrl}}/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 20000000-0000-0000-0000-000000000001
+}
+
+headers {
+  Accept: application/json
+  X-Version: 3.0.0
+}
+
+assert {
+  res.status: eq 200
+  res.headers['content-type']: eq application/json
+  res.body.id: eq 00000000-0000-0000-0000-000000000001
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

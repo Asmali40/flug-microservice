@@ -1,0 +1,43 @@
+meta {
+  name: Vorhandene ID 0001
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{apiUrl}}/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 00000000-0000-0000-0000-000000000001
+}
+
+headers {
+  Accept: application/json
+  X-Version: 3.0.0
+}
+
+assert {
+  res.status: eq 200
+  res.headers['content-type']: eq application/json
+  res.body.id: eq 00000000-0000-0000-0000-000000000001
+}
+
+script:post-response {
+  console.info('Bei OAuth 2 schickt Bruno einen Request an Keycloak, d.h. an den Rechner "localhost".');
+  console.info('Wenn der eigene Appserver als Container laeuft, dann schickt dieser aber den Token nicht an "localhost",');
+  console.info('sondern z.B. an "keycloak" über das virtuelle Netzwerk von Docker Compose!');
+  console.info('Bei der Verwendung von Bruno darf also der eigene Appserver nicht als Container laufen!');
+  
+  
+  const authorizationHeader = req.getHeader('Authorization');
+  console.log(`Authorization=${authorizationHeader}`);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

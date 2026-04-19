@@ -1,0 +1,79 @@
+meta {
+  name: Vorhandene ID 00000000-0000-0000-0000-000000000001 alle Rechnungen
+  type: graphql
+  seq: 3
+}
+
+post {
+  url: {{graphqlUrl}}
+  body: graphql
+  auth: inherit
+}
+
+headers {
+  Accept: application/graphql-response+json
+}
+
+body:graphql {
+  query ($id: ID! = "00000000-0000-0000-0000-000000000001") {
+    flug(id: $id) {
+      version
+      nachname
+      email
+      kategorie
+      hasNewsletter
+      geburtsdatum
+      homepage
+      geschlecht
+      familienstand
+      interessen
+      adresse {
+        plz
+        ort
+      }
+      rechnungen {
+          betrag
+      }
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "id": "00000000-0000-0000-0000-000000000001"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.headers['content-type']: eq application/graphql-response+json
+}
+
+tests {
+  test('Body mit den Properties', () => {
+    const body = res.getBody();
+    const { flug } = body.data;
+    const { version, nachname, email, kategorie, hasNewsletter, geburtsdatum, homepage, geschlecht, familienstand, interessen, adresse, rechnungen } = flug;
+    expect(version).to.be.a('number').that.is.gte(0);
+    expect(nachname).to.be.a('string').that.is.not.empty;
+    expect(email).to.be.a('string').that.is.not.empty;
+    expect(kategorie).to.be.a('number');
+    expect(hasNewsletter).to.be.a('boolean');
+    expect(geburtsdatum).to.be.a('string').that.is.not.empty;
+    expect(homepage).to.be.a('string').that.is.not.empty;
+    expect(geschlecht).to.be.a('string').that.is.not.empty;
+    expect(familienstand).to.be.a('string').that.is.not.empty;
+    expect(interessen).to.be.an('array').that.is.not.empty;
+      interessen.forEach(interesse => expect(interesse).to.be.a('string'));
+    expect(adresse).to.be.an('object');
+    const { plz, ort } = adresse;
+    expect(plz).to.be.a('string').that.matches(/^\d{5}/u);
+    expect(ort).to.be.a('string').that.is.not.empty;
+    expect(rechnungen).to.be.an('array').that.is.not.empty;
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

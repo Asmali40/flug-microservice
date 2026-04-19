@@ -1,0 +1,62 @@
+' Copyright (C) 2019 - present Juergen Zimmermann, Hochschule Karlsruhe
+'
+' This program is free software: you can redistribute it and/or modify
+' it under the terms of the GNU General Public License as published by
+' the Free Software Foundation, either version 3 of the License, or
+' (at your option) any later version.
+'
+' This program is distributed in the hope that it will be useful,
+' but WITHOUT ANY WARRANTY; without even the implied warranty of
+' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+' GNU General Public License for more details.
+'
+' You should have received a copy of the GNU General Public License
+' along with this program.  If not, see <https://www.gnu.org/licenses/>.
+@startuml ER Diagramm
+
+' hide the spot
+hide circle
+
+' evtl. Prbleme mit Kraehenfuessen vermeiden
+skinparam linetype ortho
+
+entity "Adresse" {
+  * id : UUID <<generated>>
+  --
+  * plz : text
+  * ort : text
+}
+
+entity "Flug" {
+  * id : UUID <<generated>>
+  --
+  * version: integer
+  * nachname : text
+  * email : text <<unique>>
+  * kategorie: integer
+  * has_newsletter: boolean
+    geburtsdatum: date
+    homepage: text
+    geschlecht: char
+    familienstand: text
+    username: text
+  * **adresse_id**: UUID <<FK>>
+    interessen: text
+  * erzeugt: timestamp
+  * aktualisiert: timestamp
+}
+
+entity "Rechnung" {
+  * id : UUID <<generated>>
+  --
+  * betrag : decimal
+  * waehrung : text
+  * **flug_id**: UUID <<FK>>
+}
+
+Kunde ||.left.|| Adresse
+Kunde ||.right.o{ Rechnung
+
+footer (c) Jürgen Zimmermann
+
+@enduml

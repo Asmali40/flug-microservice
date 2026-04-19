@@ -1,0 +1,52 @@
+# Copyright (C) 2024 - present, Juergen Zimmermann, Hochschule Karlsruhe
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+# Kubernetes Dashboard:
+#   einmalig:
+#     kubectl.exe apply -f .\dashboard-admin.yaml
+#     kubectl create token admin-user -n kubernetes-dashboard
+#     helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+#     helm upgrade --install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard --create-namespace --namespace kubernetes-dashboard
+#          helm uninstall kubernetes-dashboard -n kubernetes-dashboard
+#     helm repo list
+#     kubectl get svc -n kubernetes-dashboard
+
+#   kubectl port-forward service/kubernetes-dashboard-kong-proxy 10443:443 -n kubernetes-dashboard
+#   https://localhost:10443
+#     kubectl create token admin-user -n kubernetes-dashboard
+
+# https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard
+# https://github.com/kubernetes/dashboard/blob/master/docs/user/access-control/creating-sample-user.md
+# https://www.atlantic.net/dedicated-server-hosting/how-to-install-kubernetes-dashboard-using-helm
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-user
+  namespace: kubernetes-dashboard
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: admin-user
+    namespace: kubernetes-dashboard

@@ -1,0 +1,21 @@
+meta {
+  name: Liveness
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{healthUrl}}/liveness
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq UP
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

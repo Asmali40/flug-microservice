@@ -1,0 +1,39 @@
+meta {
+  name: Flug nach Istanbul
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{apiUrl}}?zielOrt=Istanbul
+  body: none
+  auth: bearer
+}
+
+params:query {
+  zielOrt: Istanbul
+}
+
+headers {
+  Accept: application/json
+  X-Version: 3.0.0
+}
+
+auth:bearer {
+  token: {{TOKEN}}
+}
+
+vars:pre-request {
+  TOKEN: eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI1WHFFdEtrcTJBbldPQVNNQlRWLV9xRUgyV0x6UXNPZ0NaZDZRZVdjTEZnIn0.eyJleHAiOjE3NjkwMzMwMjQsImlhdCI6MTc2OTAzMTIyNCwianRpIjoib25ydHJvOmU5YmE5NDFhLTBmMjgtZjM1Zi04NzVhLWM1NmI3NjZhOTk1NiIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODg4MC9yZWFsbXMvc3ByaW5nIiwiYXVkIjoiYWNjb3VudCIsInN1YiI6ImM1NWJkZmViLTA5NTktNGNhOC04NWI0LTczMzNlMzFjYmVmNCIsInR5cCI6IkJlYXJlciIsImF6cCI6InNwcmluZy1jbGllbnQiLCJzaWQiOiI1YmU5YWU3Ni03ZTcwLTVkZWYtMTkxMy1lNTA4MGQ5ODU1NzMiLCJhY3IiOiIxIiwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbImRlZmF1bHQtcm9sZXMtc3ByaW5nIiwib2ZmbGluZV9hY2Nlc3MiLCJ1bWFfYXV0aG9yaXphdGlvbiJdfSwicmVzb3VyY2VfYWNjZXNzIjp7InNwcmluZy1jbGllbnQiOnsicm9sZXMiOlsiQURNSU4iXX0sImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInNjb3BlIjoicHJvZmlsZSBlbWFpbCIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwibmFtZSI6IlNwcmluZyBBZG1pbiIsInByZWZlcnJlZF91c2VybmFtZSI6ImFkbWluIiwiZ2l2ZW5fbmFtZSI6IlNwcmluZyIsImZhbWlseV9uYW1lIjoiQWRtaW4iLCJlbWFpbCI6ImFkbWluQGFjbWUuY29tIn0.ctqraSeIcWsiS4-2kk_dJuNjF4nYgD5ndWBJqnHHe_V9gLwx7GlXhDrNVDAyWHwJu5_hxSt1eZ-3FnJw0JIWiLYqzXbFTA_syc8kLDQusGEB6rr1cXgbac1R4WHvzrZ5XeE-nyr7liS4t2tYvwxuZmsOpgWkLKvPUWfaEZSQZ4fzoP45GEaHAjJuvAhjxx8IeWLbCdluHsQTUL9CsVbypQkN8dtbybTMeBdScPXm8aqIdCz-uyowRM6YU1OGxiyD20hhysnOx2gSNB9Rb3FW5L92-qH4-XdE6E6VYURiIq4G-PcvqEHhUuOAzWh8upNH-w0WP-W-fmG4j_JVJSxxMQ
+}
+
+assert {
+  res.status: eq 200
+  res.headers['content-type']: eq application/json
+  res.body.id: eq 20000000-0000-0000-0000-000000000001
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

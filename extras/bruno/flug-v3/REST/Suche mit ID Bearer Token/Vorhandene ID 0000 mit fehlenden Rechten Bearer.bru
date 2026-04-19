@@ -1,0 +1,55 @@
+meta {
+  name: Vorhandene ID 0000 mit fehlenden Rechten Bearer
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{apiUrl}}/:id
+  body: none
+  auth: bearer
+}
+
+params:path {
+  id: 00000000-0000-0000-0000-000000000000
+}
+
+headers {
+  Accept: application/json
+  X-Version: 3.0.0
+}
+
+auth:bearer {
+  token: {{TOKEN}}
+}
+
+assert {
+  res.status: eq 403
+}
+
+script:pre-request {
+  // "Developer Mode" statt "Safe" erforderlich
+  const https = require('node:https');
+  
+  const httpsAgent = new https.Agent({
+   rejectUnauthorized: false,
+  });
+  
+  const tokenUrl = bru.getCollectionVar('tokenUrl');
+  const response = await bru.sendRequest({
+    method: 'POST',
+    url: tokenUrl,
+    data: { username: 'user', password: 'p' },
+    httpsAgent,
+  });
+  
+  const token = response.data.access_token;
+  console.log(`token=${token}`)
+  bru.setVar('TOKEN', token);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

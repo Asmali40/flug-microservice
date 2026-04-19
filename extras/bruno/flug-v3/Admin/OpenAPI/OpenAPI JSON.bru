@@ -1,0 +1,25 @@
+meta {
+  name: OpenAPI JSON
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/v3/api-docs
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 200
+  res.body.openapi: eq 3.1.0
+  res.body.servers[0].url: eq https://localhost:8443
+  res.body.paths: isJson
+  res.body.paths['/api']: isJson
+  res.body.paths['/api'].get: isJson
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

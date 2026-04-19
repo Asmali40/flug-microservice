@@ -1,0 +1,43 @@
+meta {
+  name: Nicht-vorhandener Nachname
+  type: graphql
+  seq: 9
+}
+
+post {
+  url: {{graphqlUrl}}
+  body: graphql
+  auth: inherit
+}
+
+headers {
+  Accept: application/graphql-response+json
+}
+
+body:graphql {
+  query ($nachname: String! = "Nichtvorhanden") {
+    fluege(input: {nachname: $nachname})  {
+      id
+    }
+  }
+}
+
+body:graphql:vars {
+  {
+    "nachname": "Nichtvorhanden"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.headers['content-type']: eq application/graphql-response+json
+  res.body.errors.length: eq 1
+  res.body.errors[0].message: contains nachname
+  res.body.errors[0].extensions.classification: eq NOT_FOUND
+  res.body.data.fluege: isNull
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,1797 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Copyright (C) 2023 - present Juergen Zimmermann, Hochschule Karlsruhe
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program. If not, see <https://www.gnu.org/licenses/>.
+-->
+
+<!--
+    Hinweis: wegen Maven-Kommentaren ist -\- maskiert, d.h. beim Aufruf / weglassen
+    Aufrufe:
+
+    1) Microservice uebersetzen und starten
+        .\mvnw compile [-D'maven.compiler.verbose'=true]
+        .\mvnw test-compile
+        .\mvnw test-compile -U
+            https://stackoverflow.com/questions/29020716/maven-what-does-u-update-snapshots-really-do/29020990#29020990
+        .\mvnw spring-boot:run
+        .\mvnw spring-boot:run -D'maven.test.skip=true'
+        .\mvnw -debug spring-boot:run -P !observability
+        .\mvnw clean
+
+    2) Microservice als selbstausfuehrendes JAR oder Docker-Image erstellen und ausfuehren
+        .\mvnw package spring-boot:repackage -D'maven.test.skip=true' -D'spring-boot.build-image.skip=true'
+            -> ${project.build.directory}/flug-...jar-> target/flug-...jar
+            https://docs.spring.io/spring-boot/maven-plugin/packaging.html#packaging.repackage-goal
+
+            java -\-enable-preview -jar .\target\flug-...jar `
+                -\-spring.profiles.active=dev `
+                -\-spring.ssl.bundle.pem.microservice.keystore.private-key=src/main/resources/private-key.pem `
+                -\-spring.ssl.bundle.pem.microservice.keystore.certificate=src/main/resources/certificate.crt `
+                -\-spring.ssl.bundle.pem.microservice.truststore.certificate=src/main/resources/certificate.crt
+
+        .\mvnw spring-boot:build-image -D'maven.test.skip=true'
+            .\mvnw help:describe -D'plugin=org.springframework.boot:spring-boot-maven-plugin' -Ddetail
+        .\mvnw spring-boot:build-image -D'maven.test.skip=true' -\-errors -\-debug
+        .\mvnw cyclonedx:makeAggregateBom
+
+    3) Tests
+        .\mvnw test jacoco:report
+            ${project.build.directory}/site/jacoco/*.html
+        .\mvnw test -Dtest=FlugGetRestTest
+        .\mvnw test -P !jacoco -D'maven.build.cache.enabled=false'
+
+    4) Codeanalyse: Checkstyle, SpotBugs, Spotless, Modernizer, SonarQube
+        .\mvnw checkstyle:checkstyle spotbugs:check spotless:check modernizer:modernizer pmd:check jxr:jxr
+            ${project.build.directory}
+        .\mvnw sonar:sonar
+
+    5) Sicherheitsueberpruefung durch OWASP Dependency Check
+        .\mvnw dependency-check:check
+            ${project.build.directory}/dependency-check-report.html
+
+    6) Javadoc (Warnings bei den Metamodel-Klassen von Jakarta Persistence)
+        .\mvnw compile javadoc:javadoc
+            ${project.build.directory}/site/apidocs
+
+    7) Projektreport erstellen
+        .\mvnw site
+            ${project.build.directory}/site/project-reports.html
+            einschl. JUnit, JaCoCo, Checkstyle, SpotBugs, DependencyCheck, Javadoc
+        .\mvnw site -D'maven.test.skip=true'
+
+    8) Projekthandbuch erstellen
+        .\mvnw asciidoctor:process-asciidoc asciidoctor:process-asciidoc@pdf -Pasciidoctor
+            ${project.build.directory}/generated-docs
+
+    9) Aktivierte Profile
+        .\mvnw help:active-profiles
+
+    10) "Effective Settings"
+        .\mvnw help:effective-settings
+
+    11) Effective POM
+        .\mvnw org.apache.maven.plugins:maven-help-plugin:effective-pom > effective-pom.xml
+        .\mvnw help:effective-pom > effective-pom.xml
+
+    12) "Dependencies Updates"
+        .\mvnw versions:display-dependency-updates
+        .\mvnw versions:display-plugin-updates
+
+    13) Sources und Javadoc herunterladen
+        .\mvnw dependency:resolve-sources
+        .\mvnw dependency:resolve -Dclassifier=javadoc
+
+    14) Toolchains
+        .\mvnw toolchains:display-discovered-jdk-toolchains
+        .\mvnw toolchains:select-jdk-toolchain
+        .\mvnw toolchains:toolchain
+
+    15) Abhaengigkeitsgraph
+        .\mvnw dependency:tree
+        .\mvnw dependency:resolve-plugins
+
+    16) Wrapper
+        mvn wrapper:wrapper
+            .mvn\wrapper\maven-wrapper.properties
+        .\mvnw compile
+            ${env:USERPROFILE}\.m2\wrapper\dists
+-->
+
+<!-- TODO Warning wegen Guice 5.1.0 https://issues.apache.org/jira/browse/MNG-8760 -->
+
+<!--suppress LongLine -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.acme</groupId>
+    <artifactId>flug</artifactId>
+    <version>2025.10.1</version>
+    <!-- <version>2025.10.2</version> -->
+    <!-- <version>2025.10.3</version> -->
+    <packaging>jar</packaging>
+
+    <name>flug</name>
+    <description>Beispielprojekt fuer Softwarearchitektur</description>
+    <url>${project.organization.url}</url>
+    <inceptionYear>2016</inceptionYear>
+    <organization>
+        <name>Hochschule Karlsruhe</name>
+        <url>https://www.h-ka.de</url>
+    </organization>
+    <licenses>
+        <license>
+            <name>GPL v3</name>
+            <url>https://www.gnu.org/licenses/gpl-3.0.html.en</url>
+        </license>
+    </licenses>
+    <scm>
+        <connection>scm:git:https://github.com/acme/flug.git</connection>
+        <developerConnection>scm:git:https://github.com/acme/flug.git</developerConnection>
+        <url>https://github.com/acme/flug</url>
+        <tag>HEAD</tag>
+    </scm>
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/acme/flug/issues</url>
+    </issueManagement>
+    <developers>
+        <developer>
+            <name>Juergen Zimmermann</name>
+            <email>Juergen.Zimmermann@h-ka.de</email>
+            <roles>
+                <role>Dozent</role>
+            </roles>
+        </developer>
+    </developers>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.0.0-M3</version>
+        <relativePath/>
+    </parent>
+
+    <properties>
+        <java.version>25</java.version>
+        <!-- <toolchain.jdk.version>JDK25</toolchain.jdk.version> -->
+        <enable.preview>--enable-preview</enable.preview>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <spring-boot.run.jvmArguments>${enable.preview}</spring-boot.run.jvmArguments>
+        <log-level-test>INFO</log-level-test>
+        <!-- <log-level-test>DEBUG</log-level-test> -->
+
+        <cdi.version>4.1.0</cdi.version>
+        <guava.version>33.5.0-jre</guava.version>
+        <jansi.version>2.4.2</jansi.version>
+        <mapstruct.version>1.6.3</mapstruct.version>
+        <springdoc-openapi.version>3.0.0-M1</springdoc-openapi.version>
+        <spring-addons-starter-oidc.version>9.0.5-M1</spring-addons-starter-oidc.version>
+
+        <!-- B O M s   u n d   s p e z i f i s c h e   V e r s i o n e n   u e b e r s c h r e i b e n -->
+        <!-- <angus-mail.version>2.0.4</angus-mail.version> -->
+        <assertj.version>4.0.0-M1</assertj.version>
+        <!-- <zipkin-reporter.version>3.5.1</zipkin-reporter.version> -->
+        <!-- <cyclonedx-maven-plugin.version>2.9.1</cyclonedx-maven-plugin.version> -->
+        <!-- <commons-lang3.version>3.18.0</commons-lang3.version> -->
+        <flyway.version>11.13.2</flyway.version>
+        <graphql-java.version>25.0.beta-8</graphql-java.version>
+        <graphql-java-dataloader.version>5.0.3</graphql-java-dataloader.version>
+        <hibernate.version>7.1.3.Final</hibernate.version>
+        <!-- fuer Annotation Processor -->
+        <hibernate-processor.version>${hibernate.version}</hibernate-processor.version>
+        <hibernate-validator.version>9.1.0.Alpha2</hibernate-validator.version>
+        <!-- <hikaricp.version>7.0.2</hikaricp.version> -->
+        <!-- springdoc-openapi nutzt Jackson 2 -->
+        <!-- <jackson-2-bom.version>2.20.0</jackson-2-bom.version> -->
+        <jackson-bom.version>3.0.0</jackson-bom.version>
+        <!-- <jakarta-persistence.version>3.2.0</jakarta-persistence.version> -->
+        <!-- <jakarta-validation.version>3.1.1</jakarta-validation.version> -->
+        <!-- <json-smart.version>2.6.0</json-smart.version> -->
+        <!-- <jspecify.version>1.0.0</jspecify.version> -->
+        <junit-jupiter.version>6.0.0</junit-jupiter.version>
+        <!-- <log4j2.version>2.24.3</log4j2.version> -->
+        <logback.version>1.5.19</logback.version>
+        <!-- <micrometer.version>1.16.0-M3</micrometer.version> -->
+        <!-- <micrometer-tracing.version>1.6.0-M3</micrometer-tracing.version> -->
+        <mockito.version>5.20.0</mockito.version>
+        <mockito-inline.version>5.2.0</mockito-inline.version>
+        <!-- <netty.version>4.2.6.Final</netty.version> -->
+        <opentelemetry.version>1.54.1</opentelemetry.version>
+        <postgresql.version>42.7.8</postgresql.version>
+        <!-- <prometheus-client.version>1.4.1</prometheus-client.version> -->
+        <!-- <reactor-bom.version>2025.0.0-M7</reactor-bom.version> -->
+        <!-- <slf4j.version>2.0.16</slf4j.version> -->
+        <!-- <snakeyaml.version>2.5</snakeyaml.version> -->
+        <!-- <spring-data.version>2025.1.0-M6</spring-data.version> -->
+        <!-- <spring-framework.version>7.0.0-M9</spring-framework.version> -->
+        <!-- <spring-graphql.version>2.0.0-M3</spring-graphql.version> -->
+        <!-- <spring-security.version>7.0.0-M3</spring-security.version> -->
+        <!-- <tomcat.version>11.0.11</tomcat.version> -->
+
+        <!-- T e s t e n -->
+        <junit-platform.version>6.0.0</junit-platform.version>
+
+        <!-- C o d e a n a l y s e ,   R e p o r t s ,   D o k u m e n t a t i o n -->
+        <asciidoctorj.version>3.0.0</asciidoctorj.version>
+        <asciidoctorj-diagram.version>3.0.1</asciidoctorj-diagram.version>
+        <asciidoctorj-pdf.version>2.3.20</asciidoctorj-pdf.version>
+        <asciidoctorj-diagram-plantuml.version>1.2025.3</asciidoctorj-diagram-plantuml.version>
+        <aspectjweaver.version>1.9.9.1</aspectjweaver.version>
+        <checkstyle.version>11.1.0</checkstyle.version>
+        <errorprone.version>2.42.0</errorprone.version>
+        <jacoco.version>0.8.13</jacoco.version>
+        <!-- <jruby.version>10.0.2.0</jruby.version> -->
+        <!-- <jruby.version>9.4.13.0</jruby.version> -->
+        <jruby.version>9.4.12.1</jruby.version>
+        <nullaway.version>0.12.10</nullaway.version>
+        <pmd.version>7.17.0</pmd.version>
+        <spotbugs.version>4.9.6</spotbugs.version>
+
+        <!-- Plugins -->
+        <asciidoctor-maven-plugin.version>3.2.0</asciidoctor-maven-plugin.version>
+        <dependency-check-maven.version>12.1.6</dependency-check-maven.version>
+        <jacoco-maven-plugin.version>0.8.13</jacoco-maven-plugin.version>
+        <maven-antrun-plugin.version>3.1.0</maven-antrun-plugin.version>
+        <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
+        <maven-clean-plugin.version>3.5.0</maven-clean-plugin.version>
+        <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+        <maven-dependency-plugin.version>3.9.0</maven-dependency-plugin.version>
+        <maven-help-plugin.version>3.5.1</maven-help-plugin.version>
+        <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
+        <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
+        <maven-jxr-plugin.version>3.6.0</maven-jxr-plugin.version>
+        <maven-pmd-plugin.version>3.27.0</maven-pmd-plugin.version>
+        <maven-project-info-reports-plugin.version>3.9.0</maven-project-info-reports-plugin.version>
+        <maven-site-plugin.version>4.0.0-M16</maven-site-plugin.version>
+        <maven-surefire-plugin.version>3.5.4</maven-surefire-plugin.version>
+        <maven-surefire-report-plugin.version>3.5.4</maven-surefire-report-plugin.version>
+        <maven-toolchains-plugin.version>3.2.0</maven-toolchains-plugin.version>
+        <maven-wrapper-plugin.version>3.3.4</maven-wrapper-plugin.version>
+        <modernizer-maven-plugin.version>3.2.0</modernizer-maven-plugin.version>
+        <sonar-maven-plugin.version>5.2.0.4988</sonar-maven-plugin.version>
+        <spotbugs-maven-plugin.version>4.9.6.0</spotbugs-maven-plugin.version>
+        <spotless-maven-plugin.version>3.0.0</spotless-maven-plugin.version>
+        <surefire-junit-platform.version>3.5.4</surefire-junit-platform.version>
+        <versions-maven-plugin.version>2.19.1</versions-maven-plugin.version>
+
+        <!-- Surefire und JaCoCo -->
+        <argLine/>
+
+        <sonar.organization>Softwarearchitektur und Microservices</sonar.organization>
+        <sonar.projectDescription>Beispiel fuer Softwarearchitektur</sonar.projectDescription>
+        <sonar.projectVersion>2025.10.1</sonar.projectVersion>
+        <sonar.host.url>http://localhost:9000</sonar.host.url>
+        <sonar.scm.disabled>true</sonar.scm.disabled>
+        <sonar.exclusions>
+            .idea/**/*,.mvn/**/*,config/**/*,extras/**/*,src/test/java/**/*,${project.build.directory}/*,tmp/**/*"
+        </sonar.exclusions>
+        <sonar.java.source>21</sonar.java.source>
+        <sonar.java.enablePreview>true</sonar.java.enablePreview>
+        <!--
+        <sonar.coverage.jacoco.xmlReportPaths>
+            ${project.build.directory}/site/jacoco/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
+        -->
+    </properties>
+
+    <!--
+    <pluginRepositories>
+        <pluginRepository>
+            <id>plugin-repository.spring.milestone</id>
+            <url>https://repo.spring.io/milestone</url>
+        </pluginRepository>
+        <pluginRepository>
+            <id>repository.spring.snapshot</id>
+            <name>Spring Snapshot Repository</name>
+            <url>https://repo.spring.io/snapshot</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </pluginRepository>
+        <pluginRepository>
+            <id>repository.jacoco.snapshot</id>
+            <name>JaCoCo Snapshot Repository</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+    -->
+
+    <!--
+    <repositories>
+        <repository>
+            <id>spring.milestone</id>
+            <name>Spring Milestone Repository</name>
+            <url>https://repo.spring.io/milestone</url>
+        </repository>
+        <repository>
+            <id>repository.spring.snapshot</id>
+            <name>Spring Snapshot Repository</name>
+            <url>https://repo.spring.io/snapshot</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>repository.hibernate.snapshot</id>
+            <name>Hibernate Snapshot Repository</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>repository.springdoc.snapshot</id>
+            <name>Springdoc Snapshot Repository</name>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>repository.jacoco.snapshot</id>
+            <name>JaCoCo Snapshot Repository</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+    -->
+
+    <!-- https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
+            </dependency>
+            <!--
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-bom</artifactId>
+                <version>${slf4j.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            -->
+            <!--
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-bom</artifactId>
+                <version>${log4j2.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            -->
+            <!--
+            -->
+            <dependency>
+                <groupId>org.assertj</groupId>
+                <artifactId>assertj-bom</artifactId>
+                <version>${assertj.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!--
+            -->
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-bom</artifactId>
+                <version>${mockito.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!--
+            -->
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit-jupiter.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!--
+            -->
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-bom</artifactId>
+                <version>${opentelemetry.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!--
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-bom</artifactId>
+                <version>${micrometer.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            -->
+            <!--
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-tracing-bom</artifactId>
+                <version>${micrometer-tracing.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            -->
+            <!--
+            <dependency>
+                <groupId>io.prometheus</groupId>
+                <artifactId>prometheus-metrics-bom</artifactId>
+                <version>${prometheus-client.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            -->
+            <!--
+            <dependency>
+                <groupId>io.zipkin.reporter2</groupId>
+                <artifactId>zipkin-reporter-bom</artifactId>
+                <version>${zipkin-reporter.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            -->
+            <!--
+            -->
+            <dependency>
+                <groupId>tools.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson-bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!--
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson-2-bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            -->
+            <!--
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>${netty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            -->
+            <!--
+            <dependency>
+                <groupId>io.projectreactor</groupId>
+                <artifactId>reactor-bom</artifactId>
+                <version>${reactor-bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            -->
+            <!--
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-framework-bom</artifactId>
+                <version>${spring-framework.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            -->
+            <!--
+            <dependency>
+                <groupId>org.hibernate.orm</groupId>
+                <artifactId>hibernate-platform</artifactId>
+                <version>${hibernate.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            -->
+            <!--
+            <dependency>
+                <groupId>org.springframework.data</groupId>
+                <artifactId>spring-data-bom</artifactId>
+                <version>${spring-data.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            -->
+            <!--
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-parent</artifactId>
+                <version>${logback.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            -->
+            <!--
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-bom</artifactId>
+                <version>${spring-security.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-parent</artifactId>
+                <version>${project.parent.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!--
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi</artifactId>
+                <version>${springdoc-openapi.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- "Starters" enthalten sinnvolle Abhaengigkeiten, die man i.a. benoetigt -->
+        <!-- spring-boot-starter-web nutzt spring-boot-starter, spring-boot-starter-tomcat, spring-boot-starter-json -->
+        <!-- spring-boot-starter verwendet spring-boot-starter-logging mit Logback -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.tomcat.embed</groupId>
+                    <artifactId>tomcat-embed-websocket</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+        </dependency>
+        <!--
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-kubernetes-client</artifactId>
+        </dependency>
+        -->
+
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>${mapstruct.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc-openapi.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.fusesource.jansi</groupId>
+            <artifactId>jansi</artifactId>
+            <version>${jansi.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.spotbugs</groupId>
+            <artifactId>spotbugs-annotations</artifactId>
+            <version>${spotbugs.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.gaul</groupId>
+            <artifactId>modernizer-maven-annotations</artifactId>
+            <version>${modernizer-maven-plugin.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- einschl. JUnit und Mockito -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.hamcrest</groupId>
+                    <artifactId>hamcrest</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.skyscreamer</groupId>
+                    <artifactId>jsonassert</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.xmlunit</groupId>
+                    <artifactId>xmlunit-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.awaitility</groupId>
+                    <artifactId>awaitility</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-suite-api</artifactId>
+            <version>${junit-platform.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-suite-engine</artifactId>
+            <version>${junit-platform.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-reporting</artifactId>
+            <version>${junit-platform.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- mock() fuer record -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-inline</artifactId>
+            <version>${mockito-inline.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-restclient</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
+        <dependency>
+            <groupId>org.jacoco</groupId>
+            <artifactId>org.jacoco.core</artifactId>
+            <version>${jacoco.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jacoco</groupId>
+            <artifactId>org.jacoco.agent</artifactId>
+            <version>${jacoco.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jacoco</groupId>
+            <artifactId>org.jacoco.report</artifactId>
+            <version>${jacoco.version}</version>
+            <scope>test</scope>
+        </dependency>
+        -->
+    </dependencies>
+
+    <build>
+        <defaultGoal>compiler:testCompile</defaultGoal>
+
+        <plugins>
+            <!-- https://maven.apache.org/wrapper/maven-wrapper-plugin -->
+            <!-- mvn help:describe -D'plugin=org.apache.maven.plugins:maven-wrapper-plugin' -Ddetail -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-wrapper-plugin</artifactId>
+                <version>${maven-wrapper-plugin.version}</version>
+            </plugin>
+
+            <!-- https://maven.apache.org/plugins/maven-clean-plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>${maven-clean-plugin.version}</version>
+            </plugin>
+
+            <!-- https://maven.apache.org/plugins/maven-dependency-plugin -->
+            <!-- mvn help:describe -D'plugin=org.apache.maven.plugins:maven-dependency-plugin' -Ddetail -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>${maven-dependency-plugin.version}</version>
+            </plugin>
+
+            <!-- https://maven.apache.org/plugins/maven-toolchains-plugin -->
+            <!-- mvn help:describe -D'plugin=org.apache.maven.plugins:maven-toolchains-plugin' -Ddetail -->
+            <!-- mvn toolchains:generate-jdk-toolchains-xml -->
+            <!-- org.apache.maven.plugin.compiler.AbstractCompilerMojo.execute() wirft CompilationFailureException -->
+            <!--
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-toolchains-plugin</artifactId>
+                <version>${maven-toolchains-plugin.version}</version>
+                <configuration>
+                    <toolchains>
+                        <jdk>
+                            <version>${java.version}</version>
+                        </jdk>
+                    </toolchains>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>toolchain</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            -->
+
+            <!-- https://maven.apache.org/plugins/maven-compiler-plugin/dependency-info.html -->
+            <!-- mvn help:describe -D'plugin=org.apache.maven.plugins:maven-compiler-plugin' -Ddetail -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
+                <configuration>
+                    <release>${java.version}</release>
+                    <showDeprecation>true</showDeprecation>
+                    <enablePreview>true</enablePreview>
+                    <!-- <fork>true</fork> -->
+                    <!-- siehe -Xms und -Xmx
+                    <meminitial>1024m</meminitial>
+                    <maxmem>2048m</maxmem>
+                    -->
+
+                    <compilerArgs>
+                        <!-- siehe:   javac -\-help-lint -->
+                        <arg>-Xlint:all,-serial,-processing</arg>
+
+                        <!-- https://errorprone.info/docs/installation -->
+                        <arg>-XDcompilePolicy=simple</arg>
+                        <arg>--should-stop=ifError=FLOW</arg>
+                        <!-- https://github.com/google/error-prone/issues/4048#issuecomment-1680735558 -->
+                        <!-- https://github.com/uber/NullAway/wiki/Configuration -->
+                        <!-- https://github.com/uber/NullAway/wiki/Configuration#maven -->
+                        <arg>
+                            -Xplugin:ErrorProne
+                            -XepDisableWarningsInGeneratedCode
+                            -XepExcludedPaths:.*/generated-sources/.*
+                            -XepOpt:NullAway:OnlyNullMarked=true
+                            -XepOpt:NullAway:JSpecifyMode=true
+                            -XepOpt:NullAway:HandleTestAssertionLibraries=true
+                            -Xep:NullAway:ERROR
+                        </arg>
+
+                        <!-- <arg>-Amapstruct.verbose=true</arg> -->
+                        <!-- add("-Amapstruct.unmappedTargetPolicy=ERROR") -->
+                        <!-- add("-Amapstruct.unmappedSourcePolicy=ERROR") -->
+                    </compilerArgs>
+
+                    <annotationProcessorPaths>
+                        <path>
+                            <!-- https://errorprone.info/docs/installation -->
+                            <!-- https://errorprone.info/docs/flags -->
+                            <!-- https://uber.github.io/AutoDispose/error-prone -->
+                            <groupId>com.google.errorprone</groupId>
+                            <artifactId>error_prone_core</artifactId>
+                            <version>${errorprone.version}</version>
+                        </path>
+
+                        <path>
+                            <groupId>com.uber.nullaway</groupId>
+                            <artifactId>nullaway</artifactId>
+                            <version>${nullaway.version}</version>
+                        </path>
+
+                        <!-- siehe ${project.build.directory}/generated-sources/annotations -->
+                        <!-- https://docs.jboss.org/hibernate/orm/current/userguide/html_single/Hibernate_User_Guide.html#tooling-modelgen -->
+                        <!-- https://docs.jboss.org/hibernate/orm/current/introduction/html_single/Hibernate_Introduction.html#generator -->
+                        <!-- build\generated\sources\annotationProcessor\java\main\com.acme.flug\entity\Kunde_.java -->
+                        <path>
+                            <groupId>org.hibernate.orm</groupId>
+                            <artifactId>hibernate-processor</artifactId>
+                            <version>${hibernate-processor.version}</version>
+                        </path>
+
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>${mapstruct.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+                <!-- https://kotlinlang.org/docs/maven.html#compile-kotlin-and-java-sources -->
+                <executions>
+                    <!-- Replacing default-compile as it is treated specially by Maven -->
+                    <execution>
+                        <id>default-compile</id>
+                        <phase>none</phase>
+                    </execution>
+                    <!-- Replacing default-testCompile as it is treated specially by Maven -->
+                    <execution>
+                        <id>default-testCompile</id>
+                        <phase>none</phase>
+                    </execution>
+                    <execution>
+                        <id>java-compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>java-test-compile</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${maven-jar-plugin.version}</version>
+                <configuration>
+                    <excludes>
+                        <!-- in src/main/resources/ -->
+                        <exclude>private-key.pem</exclude>
+                        <exclude>certificate.crt</exclude>
+                        <exclude>.reloadtrigger</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <!--
+            <plugin>
+                <groupId>org.graalvm.buildtools</groupId>
+                <artifactId>native-maven-plugin</artifactId>
+            </plugin>
+            -->
+
+            <!-- https://cyclonedx.org https://cyclonedx.github.io/cyclonedx-maven-plugin -->
+            <!-- https://github.com/CycloneDX/cyclonedx-maven-plugin -->
+            <!-- mvn help:describe -D'plugin=org.cyclonedx:cyclonedx-maven-plugin' -Ddetail -->
+            <plugin>
+                <groupId>org.cyclonedx</groupId>
+                <artifactId>cyclonedx-maven-plugin</artifactId>
+                <!-- <version>${cyclonedx-maven-plugin.version}</version> -->
+            </plugin>
+
+            <!-- https://docs.spring.io/spring-boot/maven-plugin -->
+            <!-- https://docs.spring.io/spring-boot/maven-plugin/using.html -->
+            <!-- https://docs.spring.io/spring-boot/maven-plugin/packaging.html -->
+            <!-- mvn help:describe -D'plugin=org.springframework.boot:spring-boot-maven-plugin' -Ddetail -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <!-- https://github.com/spring-projects/spring-boot/issues/41199#issuecomment-2182939925
+                    <docker>
+                        <host>//./pipe/dockerDesktopLinuxEngine</host>
+                    </docker>
+                    -->
+                    <systemPropertyVariables>
+                        <spring.profiles.active>${spring.profiles.active}</spring.profiles.active>
+                        <logging.file.name>${project.build.directory}/log/application.log</logging.file.name>
+                    </systemPropertyVariables>
+
+                    <!-- https://docs.spring.io/spring-boot/docs/current/maven-plugin/reference/htmlsingle/#build-image.customization -->
+                    <image>
+                        <name>${image.repo}/${project.name}:${image.tag}</name>
+
+                        <!-- statt "created xx years ago": https://medium.com/buildpacks/time-travel-with-pack-e0efd8bf05db -->
+                        <createdDate>now</createdDate>
+
+                        <env>
+                            <!-- https://docs.spring.io/spring-boot/docs/current/maven-plugin/reference/htmlsingle/#build-image.customization -->
+                            <!-- https://github.com/paketo-buildpacks/bellsoft-liberica#configuration -->
+                            <!-- https://github.com/paketo-buildpacks/bellsoft-liberica/blob/main/buildpack.toml: Umgebungsvariable und Ubuntu Jammy -->
+                            <!-- https://releases.ubuntu.com: Jammy Jellyfish = 22.04, Noble Numbat = 24.04 -->
+                            <!-- https://github.com/paketo-buildpacks/bellsoft-liberica/releases -->
+                            <BP_JVM_VERSION>${java.version}</BP_JVM_VERSION>
+                            <!-- BPL = Build Packs Launch -->
+                            <BPL_JVM_THREAD_COUNT>20</BPL_JVM_THREAD_COUNT>
+                            <!-- https://docs.spring.io/spring-boot/docs/current/maven-plugin/reference/htmlsingle/#build-image.examples.runtime-jvm-configuration -->
+                            <BPE_DELIM_JAVA_TOOL_OPTIONS xml:space="preserve"> </BPE_DELIM_JAVA_TOOL_OPTIONS>
+                            <BPE_APPEND_JAVA_TOOL_OPTIONS>${enable.preview}</BPE_APPEND_JAVA_TOOL_OPTIONS>
+                            <!-- <BP_NATIVE_IMAGE>true</BP_NATIVE_IMAGE> -->
+
+                            <BP_SPRING_CLOUD_BINDINGS_DISABLED>true</BP_SPRING_CLOUD_BINDINGS_DISABLED>
+                            <BPL_SPRING_CLOUD_BINDINGS_DISABLED>true</BPL_SPRING_CLOUD_BINDINGS_DISABLED>
+                            <BPL_SPRING_CLOUD_BINDINGS_ENABLED>false</BPL_SPRING_CLOUD_BINDINGS_ENABLED>
+                        </env>
+
+                        <!-- default ab Spring Boot 3.5: "Ubuntu Noble" ohne Shell statt "Ubuntu Jammy" https://github.com/paketo-buildpacks/builder-noble-java-tiny -->
+                        <!-- https://stackoverflow.com/questions/68023763/spring-boot-buildpack-always-downloads-latest-packeto-images-from-git#answer-68039094 -->
+                        <builder>paketobuildpacks/${paketobuildpacks.builder}</builder>
+
+                        <!-- bash statt ohne Shell -->
+                        <!-- https://docs.spring.io/spring-boot/maven-plugin/build-image.html#build-image.examples.custom-image-builder -->
+                        <runImage>paketobuildpacks/${paketobuildpacks.runImage}</runImage>
+
+                        <!-- https://docs.spring.io/spring-boot/docs/current/maven-plugin/reference/htmlsingle/#build-image.examples.buildpacks -->
+                        <!-- https://paketo.io/docs/howto/java/#use-an-alternative-jvm -->
+                        <!-- https://github.com/paketo-buildpacks/java/releases -->
+                        <!-- Bellsoft Liberica: https://github.com/paketo-buildpacks/bellsoft-liberica/releases: JRE 8, 11, 17, 21 (default, siehe buildpack.toml), 25 -->
+                        <!-- Eclipse Temurin: https://github.com/paketo-buildpacks/adoptium/releases: JRE 8, 11, 17, 21 (default, siehe buildpack.toml), 24 -->
+                        <!-- Azul Zulu: https://github.com/paketo-buildpacks/azul-zulu/releases: JRE 8, 11, 17, 21 (default, siehe buildpack.toml), 25 -->
+                        <!-- SapMachine: https://github.com/paketo-buildpacks/sap-machine/releases: JRE 11, 17, 21 (default, siehe buildpack.toml: BP_JVM_VERSION), 24 -->
+                        <buildpacks>
+                            <buildpack>paketobuildpacks/${paketobuildpacks.jre}:${paketobuildpacks.jre.version}</buildpack>
+                            <buildpack>paketobuildpacks/${paketobuildpacks.java}:${paketobuildpacks.java.version}</buildpack>
+                        </buildpacks>
+
+                        <!-- <imagePlatform>windows/amd64</imagePlatform> -->
+                    </image>
+                </configuration>
+
+                <executions>
+                    <execution>
+                        <id>default-repackage</id>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>default-build-image</id>
+                        <goals>
+                            <goal>build-image</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- https://maven.apache.org/surefire/maven-surefire-plugin -->
+            <!-- Maven Failsafe Plugin hat pre-integration-test und post-integration-test: unnoetig wegen Spring Test -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-junit-platform</artifactId>
+                        <version>${surefire-junit-platform.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <properties>
+                        <!-- target\surefire-reports\open-test-report.xml -->
+                        <configurationParameters>
+                            junit.platform.reporting.open.xml.enabled = true
+                            junit.platform.reporting.output.dir = target/surefire-reports
+                        </configurationParameters>
+                    </properties>
+                    <argLine>@{argLine} ${enable.preview}</argLine>
+                    <systemPropertyVariables>
+                        <spring.profiles.active>${spring.profiles.active}</spring.profiles.active>
+                        <logging.file.name>${project.build.directory}/log/application.log</logging.file.name>
+                        <logging.level.com.acme>${log-level-test}</logging.level.com.acme>
+                        <logging.level.org.springframework.web.reactive.function.client.ExchangeFunctions>${log-level-test}</logging.level.org.springframework.web.reactive.function.client.ExchangeFunctions>
+                        <logging.level.org.springframework.web.service.invoker.PathVariableArgumentResolver>${log-level-test}</logging.level.org.springframework.web.service.invoker.PathVariableArgumentResolver>
+                        <logging.level.org.springframework.web.service.invoker.RequestHeaderArgumentResolver>${log-level-test}</logging.level.org.springframework.web.service.invoker.RequestHeaderArgumentResolver>
+                        <logging.level.org.springframework.web.servlet.mvc.method.annotation.HttpEntityMethodProcessor>${log-level-test}</logging.level.org.springframework.web.servlet.mvc.method.annotation.HttpEntityMethodProcessor>
+                        <logging.level.org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping>${log-level-test}</logging.level.org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping>
+                        <logging.level.org.hibernate.SQL>${log-level-test}</logging.level.org.hibernate.SQL>
+
+                        <spring.datasource.username>${spring.datasource.username}</spring.datasource.username>
+                        <spring.datasource.password>${spring.datasource.password}</spring.datasource.password>
+                        <spring.datasource.url>${spring.datasource.url}</spring.datasource.url>
+                        <spring.flyway.clean-disabled>${spring.flyway.clean-disabled}</spring.flyway.clean-disabled>
+                        <spring.flyway.tablespace>${spring.flyway.tablespace}</spring.flyway.tablespace>
+
+                        <app.keycloak.client-secret>${app.keycloak.client-secret}</app.keycloak.client-secret>
+                        <app.keycloak.host>${app.keycloak.host}</app.keycloak.host>
+                        <app.keycloak.port>${app.keycloak.port}</app.keycloak.port>
+                        <app.keycloak.issuer-uri>${app.keycloak.issuer-uri}</app.keycloak.issuer-uri>
+
+                        <!-- <groups>integration | unit</groups> -->
+                        <!-- <groups>integration</groups> -->
+                        <!-- <groups>rest</groups> -->
+                        <!-- <groups>rest-get</groups> -->
+                        <!-- <groups>rest-write</groups> -->
+                        <!-- <groups>graphql</groups> -->
+                        <!-- <groups>query</groups> -->
+                        <!-- <groups>mutation</groups> -->
+                        <!-- <groups>unit</groups> -->
+                        <!-- <groups>service-read</groups> -->
+                        <!-- <groups>service-write</groups> -->
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+                <version>${maven-surefire-report-plugin.version}</version>
+            </plugin>
+
+            <!-- https://www.eclemma.org/jacoco/trunk/doc/maven.html -->
+            <!-- https://www.eclemma.org/jacoco/trunk/doc/examples/build/pom.xml -->
+            <!-- mvn help:describe -D'plugin=org.jacoco:jacoco-maven-plugin' -Ddetail -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco-maven-plugin.version}</version>
+                <configuration>
+                    <excludes>
+                        <exclude>com/acme/entity/*_.class</exclude>
+                    </excludes>
+                    <destFile>${project.build.directory}/jacoco.exec</destFile>
+                </configuration>
+
+                <executions>
+                    <!-- https://www.eclemma.org/jacoco/trunk/doc/prepare-agent-mojo.html -->
+                    <execution>
+                        <id>default-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+
+                    <execution>
+                        <id>generate-code-coverage-report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <configuration>
+                            <formats>XML,HTML</formats>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- https://maven.apache.org/plugins/maven-checkstyle-plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${maven-checkstyle-plugin.version}</version>
+                <configuration>
+                    <!-- https://maven.apache.org/plugins/maven-checkstyle-plugin/examples/custom-checker-config.html -->
+                    <configLocation>config/checkstyle/checkstyle.xml</configLocation>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>${checkstyle.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <!-- https://spotbugs.github.io/spotbugs-maven-plugin -->
+            <!-- mvn help:describe -D'plugin=com.github.spotbugs:spotbugs-maven-plugin' -Ddetail -->
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>${spotbugs-maven-plugin.version}</version>
+                <configuration>
+                    <excludeFilterFile>${basedir}/config/spotbugs/exclude.xml</excludeFilterFile>
+                </configuration>
+            </plugin>
+
+            <!-- https://maven.apache.org/plugins/maven-pmd-plugin/index.html -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>${maven-pmd-plugin.version}</version>
+
+                <configuration>
+                    <includeTests>true</includeTests>
+                    <printFailingErrors>true</printFailingErrors>
+                    <rulesets>
+                        <ruleset>${basedir}/config/pmd/ruleset.xml</ruleset>
+                    </rulesets>
+                </configuration>
+
+                <dependencies>
+                    <dependency>
+                        <groupId>net.sourceforge.pmd</groupId>
+                        <artifactId>pmd-core</artifactId>
+                        <version>${pmd.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>net.sourceforge.pmd</groupId>
+                        <artifactId>pmd-java</artifactId>
+                        <version>${pmd.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <!-- https://github.com/diffplug/spotless -->
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless-maven-plugin.version}</version>
+            </plugin>
+
+            <!-- https://github.com/gaul/modernizer-maven-plugin -->
+            <plugin>
+                <groupId>org.gaul</groupId>
+                <artifactId>modernizer-maven-plugin</artifactId>
+                <version>${modernizer-maven-plugin.version}</version>
+                <configuration>
+                    <javaVersion>${java.version}</javaVersion>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>modernizer</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>modernizer</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- mvn help:describe -D'plugin=org.sonarsource.scanner.maven:sonar-maven-plugin' -Ddetail -->
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>${sonar-maven-plugin.version}</version>
+            </plugin>
+
+            <!-- https://jeremylong.github.io/DependencyCheck/dependency-check-maven -->
+            <!-- mvn help:describe -D'plugin=org.owasp:dependency-check-maven' -Ddetail -->
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>${dependency-check-maven.version}</version>
+                <configuration>
+                    <nvdApiKey>${nvd.api.key}</nvdApiKey>
+                    <!-- <nvdApiDelay>5000</nvdApiDelay> -->
+                    <!-- <nvdMaxRetryCount>20</nvdMaxRetryCount> -->
+                    <dataDirectory>C:/Zimmermann/dependency-check-data</dataDirectory>
+                    <suppressionFiles>config/dependencycheck/suppression.xml</suppressionFiles>
+                    <archiveAnalyzerEnabled>false</archiveAnalyzerEnabled>
+                    <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+                    <autoconfAnalyzerEnabled>false</autoconfAnalyzerEnabled>
+                    <bundleAuditAnalyzerEnabled>false</bundleAuditAnalyzerEnabled>
+                    <cmakeAnalyzerEnabled>false</cmakeAnalyzerEnabled>
+                    <cocoapodsAnalyzerEnabled>false</cocoapodsAnalyzerEnabled>
+                    <composerAnalyzerEnabled>false</composerAnalyzerEnabled>
+                    <cpanfileAnalyzerEnabled>false</cpanfileAnalyzerEnabled>
+                    <dartAnalyzerEnabled>false</dartAnalyzerEnabled>
+                    <golangDepEnabled>false</golangDepEnabled>
+                    <golangModEnabled>false</golangModEnabled>
+                    <msbuildAnalyzerEnabled>false</msbuildAnalyzerEnabled>
+                    <nodeAnalyzerEnabled>false</nodeAnalyzerEnabled>
+                    <nodeAuditAnalyzerEnabled>false</nodeAuditAnalyzerEnabled>
+                    <nugetconfAnalyzerEnabled>false</nugetconfAnalyzerEnabled>
+                    <nuspecAnalyzerEnabled>false</nuspecAnalyzerEnabled>
+                    <pyDistributionAnalyzerEnabled>false</pyDistributionAnalyzerEnabled>
+                    <pyPackageAnalyzerEnabled>false</pyPackageAnalyzerEnabled>
+                    <retireJsAnalyzerEnabled>false</retireJsAnalyzerEnabled>
+                    <rubygemsAnalyzerEnabled>false</rubygemsAnalyzerEnabled>
+                    <swiftPackageManagerAnalyzerEnabled>false</swiftPackageManagerAnalyzerEnabled>
+                    <swiftPackageResolvedAnalyzerEnabled>false</swiftPackageResolvedAnalyzerEnabled>
+                </configuration>
+
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- https://maven.apache.org/plugins/maven-javadoc-plugin -->
+            <!-- https://maven.apache.org/plugins/maven-javadoc-plugin/javadoc-mojo.html -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${maven-javadoc-plugin.version}</version>
+                <configuration>
+                    <additionalOptions>${enable.preview}</additionalOptions>
+                    <show>package</show>
+                    <sourcepath>${project.compileSourceRoots}</sourcepath>
+                    <bottom><![CDATA[Copyright &#169; {currentYear} {organizationName}. All rights reserved.]]></bottom>
+                </configuration>
+                <!--
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>javadoc</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                -->
+            </plugin>
+
+            <!-- https://maven.apache.org/plugins/maven-project-info-reports-plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>${maven-project-info-reports-plugin.version}</version>
+            </plugin>
+
+            <!-- https://maven.apache.org/plugins/maven-site-plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <version>${maven-site-plugin.version}</version>
+            </plugin>
+
+            <!-- https://www.mojohaus.org/versions/versions-maven-plugin -->
+            <!-- mvn help:describe -D'plugin=org.codehaus.mojo:versions-maven-plugin' -Ddetail -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>${versions-maven-plugin.version}</version>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-help-plugin</artifactId>
+                <version>${maven-help-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>active-profiles</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+            </plugin>
+
+            <!-- https://www.eclemma.org/jacoco/trunk/doc/maven.html -->
+            <!-- mvn help:describe -D'plugin=org.jacoco:jacoco-maven-plugin' -Ddetail -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>com/acme/entity/*_.class</exclude>
+                    </excludes>
+                    <destFile>${project.build.directory}/jacoco.exec</destFile>
+                </configuration>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>report</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+
+            <!-- https://maven.apache.org/plugins/maven-checkstyle-plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <configuration>
+                    <configLocation>${basedir}/config/checkstyle/checkstyle.xml</configLocation>
+                </configuration>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>checkstyle</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+
+            <!-- https://maven.apache.org/plugins/maven-pmd-plugin/index.html -->
+            <!-- mvn help:describe -D'plugin=rg.apache.maven.plugins:maven-pmd-plugin' -Ddetail -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+
+                <configuration>
+                    <includeTests>true</includeTests>
+                    <printFailingErrors>true</printFailingErrors>
+                    <rulesets>
+                        <ruleset>${basedir}/config/pmd/ruleset.xml</ruleset>
+                    </rulesets>
+                </configuration>
+            </plugin>
+
+            <!-- fuer Checkstyle: "Source XRef to link to" -->
+            <!-- https://maven.apache.org/jxr/maven-jxr-plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jxr-plugin</artifactId>
+                <version>${maven-jxr-plugin.version}</version>
+            </plugin>
+
+            <!-- https://spotbugs.github.io/spotbugs-maven-plugin -->
+            <!-- mvn help:describe -D'plugin=com.github.spotbugs:spotbugs-maven-plugin' -Ddetail -->
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <configuration>
+                    <excludeFilterFile>${basedir}/config/spotbugs/exclude.xml</excludeFilterFile>
+                </configuration>
+            </plugin>
+
+            <!--
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+            </plugin>
+            -->
+
+            <!-- https://jeremylong.github.io/DependencyCheck/dependency-check-maven/ -->
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <configuration>
+                    <nvdApiKey>${nvd.api.key}</nvdApiKey>
+                    <dataDirectory>C:/Zimmermann/dependency-check-data</dataDirectory>
+                    <suppressionFiles>config/dependencycheck/suppression.xml</suppressionFiles>
+                    <archiveAnalyzerEnabled>false</archiveAnalyzerEnabled>
+                    <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+                    <autoconfAnalyzerEnabled>false</autoconfAnalyzerEnabled>
+                    <bundleAuditAnalyzerEnabled>false</bundleAuditAnalyzerEnabled>
+                    <cmakeAnalyzerEnabled>false</cmakeAnalyzerEnabled>
+                    <cocoapodsAnalyzerEnabled>false</cocoapodsAnalyzerEnabled>
+                    <composerAnalyzerEnabled>false</composerAnalyzerEnabled>
+                    <cpanfileAnalyzerEnabled>false</cpanfileAnalyzerEnabled>
+                    <dartAnalyzerEnabled>false</dartAnalyzerEnabled>
+                    <golangDepEnabled>false</golangDepEnabled>
+                    <golangModEnabled>false</golangModEnabled>
+                    <msbuildAnalyzerEnabled>false</msbuildAnalyzerEnabled>
+                    <nodeAnalyzerEnabled>false</nodeAnalyzerEnabled>
+                    <nodeAuditAnalyzerEnabled>false</nodeAuditAnalyzerEnabled>
+                    <nugetconfAnalyzerEnabled>false</nugetconfAnalyzerEnabled>
+                    <nuspecAnalyzerEnabled>false</nuspecAnalyzerEnabled>
+                    <pyDistributionAnalyzerEnabled>false</pyDistributionAnalyzerEnabled>
+                    <pyPackageAnalyzerEnabled>false</pyPackageAnalyzerEnabled>
+                    <retireJsAnalyzerEnabled>false</retireJsAnalyzerEnabled>
+                    <rubygemsAnalyzerEnabled>false</rubygemsAnalyzerEnabled>
+                    <swiftPackageManagerAnalyzerEnabled>false</swiftPackageManagerAnalyzerEnabled>
+                    <swiftPackageResolvedAnalyzerEnabled>false</swiftPackageResolvedAnalyzerEnabled>
+                </configuration>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>aggregate</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+
+            <!-- https://maven.apache.org/plugins/maven-javadoc-plugin -->
+            <!-- https://maven.apache.org/plugins/maven-javadoc-plugin/javadoc-mojo.html -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <additionalOptions>${enable.preview}</additionalOptions>
+                    <show>package</show>
+                    <sourcepath>${project.compileSourceRoots}</sourcepath>
+                </configuration>
+                <!--
+                <reportSets>
+                    <reportSet>
+                        <id>default</id>
+                        <reports>
+                            <report>javadoc</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+                -->
+            </plugin>
+
+            <!-- https://maven.apache.org/plugins/maven-project-info-reports-plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>licenses</report>
+                            <report>team</report>
+                            <report>scm</report>
+                            <report>dependencies</report>
+                            <!-- <report>dependency-management</report> -->
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+        </plugins>
+    </reporting>
+
+    <profiles>
+        <profile>
+            <id>postgres</id>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <spring.flyway.tablespace>${spring.flyway.tablespace}</spring.flyway.tablespace>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>persistence</id>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <spring.datasource.username>${spring.datasource.username}</spring.datasource.username>
+                                <spring.datasource.password>${spring.datasource.password}</spring.datasource.password>
+                                <spring.datasource.url>${spring.datasource.url}</spring.datasource.url>
+                                <spring.flyway.clean-disabled>${spring.flyway.clean-disabled}</spring.flyway.clean-disabled>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+
+            <dependencies>
+                <dependency>
+                    <groupId>jakarta.enterprise</groupId>
+                    <artifactId>jakarta.enterprise.cdi-api</artifactId>
+                    <version>${cdi.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-data-jpa</artifactId>
+                </dependency>
+
+                <!--
+                <dependency>
+                    <groupId>jakarta.persistence</groupId>
+                    <artifactId>jakarta.persistence-api</artifactId>
+                    <version>${jakarta-persistence.version}</version>
+                </dependency>
+                -->
+                <dependency>
+                    <groupId>org.hibernate.orm</groupId>
+                    <artifactId>hibernate-core</artifactId>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.postgresql</groupId>
+                    <artifactId>postgresql</artifactId>
+                    <scope>runtime</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-flyway</artifactId>
+                </dependency>
+                <!-- https://documentation.red-gate.com/flyway/learn-more-about-flyway/system-requirements/supported-databases-for-flyway -->
+                <!-- https://documentation.red-gate.com/fd/postgresql-184127604.html -->
+                <!-- https://github.com/flyway/flyway/blob/main/flyway-core/src/main/java/org/flywaydb/core/internal/database/DatabaseTypeRegister.java#L99 -->
+                <dependency>
+                    <groupId>org.flywaydb</groupId>
+                    <artifactId>flyway-database-postgresql</artifactId>
+                    <!-- ab Flyway 10 als eigenes Artifakt und nicht mehr Teil von flyway-core -->
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>mail</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-mail</artifactId>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>security</id>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <app.keycloak.client-secret>${app.keycloak.client-secret}</app.keycloak.client-secret>
+                                <app.keycloak.host>${app.keycloak.host}</app.keycloak.host>
+                                <app.keycloak.port>${app.keycloak.port}</app.keycloak.port>
+                                <app.keycloak.issuer-uri>${app.keycloak.issuer-uri}</app.keycloak.issuer-uri>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-security</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+                </dependency>
+                <!-- RestClient und RestClient.Builder fuer z.B. KeycloakRepository oder HTTP-Interface fuer anderen Microservice -->
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-restclient</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>com.c4-soft.springaddons</groupId>
+                    <artifactId>spring-addons-starter-oidc</artifactId>
+                    <version>${spring-addons-starter-oidc.version}</version>
+                </dependency>
+                <!-- Passwort-Verschluesselung mit bcrypt, Argon2 oder PBKDF2: -->
+                <!--
+                <dependency>
+                    <groupId>org.springframework.security</groupId>
+                    <artifactId>spring-security-crypto</artifactId>
+                </dependency>
+                -->
+            </dependencies>
+        </profile>
+
+        <!-- Tracing und Metriken -->
+        <profile>
+            <id>observability</id>
+
+            <!-- "Micrometer" ist eine Fassade fuer Metriken-Daten (vgl.: SLF4J fuer Logging) -->
+            <!-- "OpenTelemetry (OTel)" ist ein Projekt von CNCF (Cloud Native Computing Foundation) fuer Tracing, Metriken und Log -->
+            <!-- zzgl. APIs, SDKs, und Netzwerk-Protokolle fuer die (Telemetrie-) Daten -->
+            <!-- "OTLP (OpenTelemetry Protocol)" ist das Netzwerk-Protokoll von OpenTelemetry fuer den Export von Daten für Tracing, Metriken und Logs -->
+
+            <dependencies>
+                <!-- Micrometer mit OpenTelemetry zzgl. Prometheus fuer Metriken und Zipkin fuer Tracing -->
+                <!-- https://docs.spring.io/spring-boot/reference/actuator/tracing.html#actuator.micrometer-tracing.tracer-implementations.otel-zipkin -->
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-opentelemetry</artifactId>
+                    <!-- Prometheus statt "OpenTelemetry (OTel) Collector". OTLP = OpenTelemetry Protocol -->
+                    <exclusions>
+                        <exclusion>
+                            <groupId>io.micrometer</groupId>
+                            <artifactId>micrometer-registry-otlp</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>io.opentelemetry</groupId>
+                            <artifactId>opentelemetry-exporter-otlp</artifactId>
+                        </exclusion>
+                        <!-- Ausschluss, wenn OpenZipkin Brave (s.u.) verwendet werden soll -->
+                        <!--
+                        <exclusion>
+                            <groupId>io.micrometer</groupId>
+                            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+                        </exclusion>
+                        -->
+                    </exclusions>
+                </dependency>
+
+                <!-- Visualisierung der Metriken durch Prometheus/Grafana -->
+                <!-- https://docs.spring.io/spring-boot/reference/actuator/endpoints.html -->
+                <!-- https://docs.micrometer.io/micrometer/reference/implementations/prometheus.html#_gradle -->
+                <dependency>
+                    <groupId>io.micrometer</groupId>
+                    <artifactId>micrometer-registry-prometheus</artifactId>
+                </dependency>
+
+                <!-- https://docs.spring.io/spring-boot/reference/actuator/tracing.html -->
+                <!-- io.micrometer:micrometer-tracing-bridge-otel ist in spring-boot-starter-opentelemetry enthalten -->
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-zipkin</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>io.opentelemetry</groupId>
+                    <artifactId>opentelemetry-exporter-zipkin</artifactId>
+                    <scope>runtime</scope>
+                </dependency>
+
+                <!-- alternativ: OpenZipkin Brave mit Zipkin -->
+                <!-- https://docs.spring.io/spring-boot/reference/actuator/tracing.html#actuator.micrometer-tracing.tracer-implementations.brave-zipkin -->
+                <!--
+                <dependency>
+                    <groupId>io.micrometer</groupId>
+                    <artifactId>micrometer-tracing-bridge-brave</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>io.zipkin.reporter2</groupId>
+                    <artifactId>zipkin-reporter-brave</artifactId>
+                    <scope>runtime</scope>
+                </dependency>
+                -->
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>graphql</id>
+
+            <dependencies>
+                <!-- HttpGraphQlClient benoetigt WebClient mit Project Reactor -->
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-webflux</artifactId>
+                </dependency>
+                <!--
+                -->
+                <dependency>
+                    <groupId>com.graphql-java</groupId>
+                    <artifactId>java-dataloader</artifactId>
+                    <version>${graphql-java-dataloader.version}</version>
+                </dependency>
+                <!--
+                -->
+                <dependency>
+                    <groupId>com.graphql-java</groupId>
+                    <artifactId>graphql-java</artifactId>
+                    <version>${graphql-java.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-graphql</artifactId>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>asciidoctor</id>
+            <build>
+                <plugins>
+                    <!-- https://docs.asciidoctor.org/maven-tools/latest/plugin/usage -->
+                    <!-- mvn help:describe -D'plugin=org.asciidoctor:asciidoctor-maven-plugin' -Ddetail -->
+                    <plugin>
+                        <groupId>org.asciidoctor</groupId>
+                        <artifactId>asciidoctor-maven-plugin</artifactId>
+                        <version>${asciidoctor-maven-plugin.version}</version>
+
+                        <!-- https://github.com/asciidoctor/asciidoctor-maven-examples/blob/main/asciidoc-to-html-example/pom.xml -->
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.jruby</groupId>
+                                <artifactId>jruby</artifactId>
+                                <version>${jruby.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.asciidoctor</groupId>
+                                <artifactId>asciidoctorj</artifactId>
+                                <version>${asciidoctorj.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.asciidoctor</groupId>
+                                <artifactId>asciidoctorj-diagram</artifactId>
+                                <version>${asciidoctorj-diagram.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.asciidoctor</groupId>
+                                <artifactId>asciidoctorj-diagram-plantuml</artifactId>
+                                <version>${asciidoctorj-diagram-plantuml.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.asciidoctor</groupId>
+                                <artifactId>asciidoctorj-pdf</artifactId>
+                                <version>${asciidoctorj-pdf.version}</version>
+                            </dependency>
+                        </dependencies>
+
+                        <configuration>
+                            <sourceDirectory>${basedir}/extras/doc</sourceDirectory>
+                            <!-- https://github.com/asciidoctor/asciidoctor-maven-examples/blob/main/asciidoctor-diagram-example/pom.xml -->
+                            <requires>
+                                <require>asciidoctor-diagram</require>
+                            </requires>
+                            <attributes>
+                                <!-- Die Ausgabe "plantuml-full" bezieht sich auf ein Binary, nicht auf die JAR-Datei -->
+                                <plantumlclasspath>C:/Zimmermann/plantuml/plantuml.jar</plantumlclasspath>
+                                <graphvizdot>C:/Zimmermann/Graphviz/bin/dot.exe</graphvizdot>
+                                <attribute-missing>warn</attribute-missing>
+                            </attributes>
+                            <!-- <outputDirectory>${project.build.directory}/generated-docs</outputDirectory> -->
+                        </configuration>
+
+                        <executions>
+                            <execution>
+                                <id>html</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>process-asciidoc</goal>
+                                </goals>
+                                <configuration>
+                                    <!-- <backend>html5</backend> -->
+                                    <attributes>
+                                        <imagesdir>.</imagesdir>
+                                    </attributes>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>pdf</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>process-asciidoc</goal>
+                                </goals>
+                                <configuration>
+                                    <backend>pdf</backend>
+                                    <attributes>
+                                        <imagesdir>.</imagesdir>
+                                    </attributes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

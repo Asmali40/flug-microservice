@@ -1,0 +1,144 @@
+// Copyright (C) 2019 - present Juergen Zimmermann, Hochschule Karlsruhe
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+= Projekthandbuch
+Jürgen Zimmermann <Juergen.Zimmermann@h-ka.de>
+:doctype: book
+:toc: left
+:sectanchors:
+:sectlinks:
+:sectnums:
+:pagenums:
+:source-highlighter: rouge
+:icons: font
+
+// https://github.com/asciidoctor/asciidoctorj
+// https://github.com/asciidoctor/asciidoctor-diagram
+// http://de.plantuml.com/classes.html
+// http://de.plantuml.com/component.html
+// https://github.com/odrotbohm/asciidoctor-plantuml
+
+IMPORTANT: Copyright (C) 2015 - present Jürgen Zimmermann, Hochschule Karlsruhe. +
+           Free use of this software is granted under the terms of the
+           GNU General Public License (GPL) v3. +
+           For the full text of the license, see the http://www.gnu.org/licenses/gpl-3.0.html[license] file.
+
+== Der Microservice Flug
+
+=== Der Microservice im Überblick
+
+bla bla
+
+.Use Cases für den Microservice "flug"
+[plantuml,use-cases,svg]
+----
+include::./use-cases.plantuml[]
+----
+
+bla bla
+
+.Komponenten des Microservice "flug"
+[plantuml,komponenten,svg]
+----
+include::./komponenten.plantuml[]
+----
+
+=== Die REST-Schnittstelle
+
+bla bla
+
+."FlugController" für Lesezugriffe an der REST-Schnittstelle
+[plantuml,FlugController,svg]
+----
+include::./FlugController.plantuml[]
+----
+
+."Sequenzdiagramm" mit den Methodenaufrufen
+[plantuml,sequenzdiagramm,svg]
+----
+include::sequenzdiagramm.plantuml[]
+----
+
+."FlugWriteController" für Schreibzugriffe an der REST-Schnittstelle
+[plantuml,FlugWriteController,svg]
+----
+include::./FlugWriteController.plantuml[]
+----
+
+=== Die Geschäftslogik
+
+bla bla
+
+.Die Service-Klasse "FlugService" für die Geschäftslogik
+[plantuml,FlugService,svg]
+----
+include::./FlugService.plantuml[]
+----
+
+bla bla
+
+.Die Service-Klasse "FlugWriteService" für die Geschäftslogik
+[plantuml,FlugWriteService,svg]
+----
+include::./FlugWriteService.plantuml[]
+----
+
+=== Die Entity-Klassen
+
+bla bla
+
+.Die Entity-Klasse "Flug" für Flugdaten
+[plantuml,Flug,svg]
+----
+include::./Flug.plantuml[]
+----
+
+== Programmierrichtlinien
+
+TIP: Als Studierende/r sollte man sich frühzeitig an Programmierrichtlinien
+     gewöhnen. Das hinterlässt im späteren Praxissemester einen professionellen Eindruck.
+
+=== Java
+
+[horizontal]
+_Oracle_:: https://www.oracle.com/java/technologies/javase/codeconventions-namingconventions.html
+_Google_:: https://google.github.io/styleguide/javaguide.html
+_Microsoft Azure_:: https://azure.github.io/azure-sdk/java_introduction.html
+_Mozilla_:: https://firefox-source-docs.mozilla.org/code-quality/coding-style/coding_style_java.html
+
+=== SQL
+
+[horizontal]
+_SQL_:: https://www.sqlstyle.guide
+
+=== TypeScript und JavaScript
+
+[horizontal]
+_Microsoft_:: https://github.com/Microsoft/TypeScript/wiki/Coding-guidelines
+_Angular_:: https://angular.io/docs/ts/latest/guide/style-guide.html
+_Airbnb_:: https://github.com/airbnb/javascript
+_React bei Airbnb_:: https://github.com/airbnb/javascript/tree/master/react
+
+=== Python
+
+[horizontal]
+_Google_:: https://google.github.io/styleguide/pyguide.html
+
+=== Kotlin
+
+Für die Entwicklung mit *Kotlin* sind folgende Styleguides empfehlenswert:
+
+[horizontal]
+_Kotlin_:: https://kotlinlang.org/docs/reference/coding-conventions.html
+_Android_:: https://developer.android.com/kotlin/style-guide

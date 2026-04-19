@@ -1,0 +1,23 @@
+meta {
+  name: mappings
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{actuatorUrl}}/mappings
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 200
+  res.body.contexts.flug.mappings.dispatcherServlets.dispatcherServlet: isDefined
+  res.body.contexts.flug.mappings.dispatcherServlets.dispatcherServlet: isArray
+  res.body.contexts.flug.mappings.dispatcherServlets.dispatcherServlet: isNotEmpty
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

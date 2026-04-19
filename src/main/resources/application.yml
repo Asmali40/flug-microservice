@@ -1,0 +1,461 @@
+#file: noinspection LongLine
+# Copyright (C) 2016 - present Juergen Zimmermann, Hochschule Karlsruhe
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+---
+# ==============================================================================
+# K e y c l o a k
+# ==============================================================================
+
+# https://github.com/ch4mpy/spring-addons/blob/master/spring-addons-starter-oidc/README.MD
+# https://stackoverflow.com/questions/74571191/use-keycloak-spring-adapter-with-spring-boot-3#answer-74572732
+# https://github.com/ch4mpy/spring-addons/tree/master/samples/tutorials
+# com.c4_soft.springaddons.security.oidc.starter.properties.SpringAddonsOidcProperties
+com.c4-soft.springaddons.oidc:
+  ops:
+    # "iss" ist Praefix fuer ".../.well-known/openid-configuration"
+    - iss: ${app.keycloak.issuer-uri}
+      username-claim: preferred_username
+      authorities:
+        # Pfad zu den Rollen innerhalb vom "JWT Claim" und zusaetzlicher Praefix "ROLE_" fuer Spring Security
+        - path: $.realm_access.roles
+          #prefix: ROLE_
+        - path: $.resource_access.*.roles
+          prefix: ROLE_
+  # com.c4_soft.springaddons.security.oidc.starter.properties.SpringAddonsOidcResourceServerProperties
+  # in com.c4-soft.springaddons:spring-addons-starter-oidc
+  resourceserver.permit-all:
+    - /api/**
+    - /auth/*
+    - /dev/db_populate
+    - /error
+    - /actuator
+    - /actuator/**
+    - /v3/api-docs
+    - /v3/api-docs.yaml
+    - /swagger-ui.html
+    - /graphql
+    - /graphiql
+  # com.c4_soft.springaddons.security.oidc.starter.properties.CorsProperties
+  # in com.c4-soft.springaddons:spring-addons-starter-oidc
+  #cors:
+  #  - path: /**
+  #    allowed-origin-patterns: ["https://localhost:8443", "https://flug:8443", "https://oauth.pstmn.io"]
+
+# ==============================================================================
+# S p r i n g
+# ==============================================================================
+server:
+  compression:
+    enabled: true
+    mime-types: application/json
+    min-response-size: 2KB
+  # https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#howto.webserver.configure-ssl
+  http2.enabled: true
+  port: 8443
+  ssl.bundle: microservice
+  shutdown: graceful
+
+spring:
+  application.name: flug
+  aop.proxy-target-class: false
+
+  # ==============================================================================
+  # D a t e n b a nk
+  # ==============================================================================
+  # https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html#appendix.application-properties.data
+  datasource:
+    username: flug # als System-Property oder Umgebungsvariable
+    password: p # als System-Property oder Umgebungsvariable
+    url: jdbc:postgresql://localhost/flug # als System-Property oder Umgebungsvariable
+
+  # https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html#appendix.application-properties.data-migration
+  flyway.create-schemas: false
+
+  # https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html#appendix.application-properties.data
+  jpa:
+    #database-platform: POSTGRESQL
+    hibernate:
+      # https://docs.jboss.org/hibernate/orm/current/userguide/html_single/Hibernate_User_Guide.html#configurations-hbmddl
+      #ddl-auto: none
+      naming.physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+    open-in-view: false
+    properties:
+      # https://docs.jboss.org/hibernate/orm/current/javadocs/org/hibernate/cfg/AvailableSettings.html
+      # https://docs.jboss.org/hibernate/orm/current/javadocs/org/hibernate/cfg/Environment.html
+      hibernate:
+        #default_schema: flug
+        flushMode: COMMIT
+        jdbc:
+          time_zone: Europe/Berlin
+          batch_versioned_data: true
+          #fetch_size: 10
+        order_inserts: true
+        order_updates: true
+        session.events.log.LOG_QUERIES_SLOWER_THAN_MS: 20
+        xml_mapping_enabled: false
+        #mapping.default_list_semantics: LIST
+      # https://stackoverflow.com/questions/31585698/spring-boot-jpa2-hibernate-enable-second-level-cache
+      # https://jakarta.ee/xml/ns/persistence
+      # https://jakarta.ee/xml/ns/persistence/persistence_3_1.xsd
+      jakarta.persistence:
+        sharedCache.mode: ENABLE_SELECTIVE
+        validation.mode: NONE
+
+  # siehe org.springframework.boot.autoconfigure.jackson.JacksonProperties
+  jackson.default-property-inclusion: non_null
+  lifecycle.timeout-per-shutdown-phase: 3s
+
+  # ==============================================================================
+  # M a i l
+  # ==============================================================================
+  mail:
+    host: smtp.acme.com
+    port: 25
+    #protocol: smtp
+    properties.mail:
+      debug: false
+      smtp:
+        auth: false
+        starttls.enable: false
+    # GMail https://www.geeksforgeeks.org/springboot/spring-boot-sending-email-via-smtp
+    #host: smtp.gmail.com
+    #port: 587
+    #username: myUsername
+    #password: myPassword
+    #properties.mail.smtp.auth: true
+    #properties.mail.smtp.starttls.enable: true
+
+  main.lazy-initialization: true
+  mvc:
+    apiversion:
+      default: 3.0.0
+      use.header: X-Version
+    contentnegotiation.default-content-types: [application/json]
+    problemdetails.enabled: true
+
+  # ==============================================================================
+  # S e c u r i t y
+  # ==============================================================================
+  # https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html
+  security.oauth2.resourceserver.jwt:
+    # "issuer-uri" ist Praefix fuer ".../.well-known/openid-configuration"
+    issuer-uri: ${app.keycloak.issuer-uri}
+    #jws-algorithms: RS256
+
+  # ==============================================================================
+  # T L S
+  # ==============================================================================
+  # https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#features.ssl.pem
+  # https://spring.io/blog/2023/06/07/securing-spring-boot-applications-with-ssl
+  ssl.bundle.pem.microservice:
+    keystore:
+      private-key: "classpath:private-key.pem"
+      certificate: "classpath:certificate.crt"
+    truststore:
+      certificate: "classpath:certificate.crt"
+
+  threads.virtual.enabled: true
+  web.error.whitelabel.enabled: false
+
+
+# ==============================================================================
+# A c t u a t o r
+# ==============================================================================
+management:
+  endpoints.web.exposure.include: "*"
+  #endpoint.shutdown.access: unrestricted
+
+  # Trace every action
+  metrics.distribution.percentiles-histogram.http.server.requests: true
+
+  observations:
+    # https://docs.spring.io/spring-boot/4.0/reference/actuator/observability.html#actuator.observability.annotations
+    annotations.enabled: true
+    # siehe extras\compose\prometheus+grafana\prometheus.yml
+    # siehe /actuator/metrics/get-by-id
+    key-values.application: flug
+
+  # https://docs.spring.io/spring-boot/reference/actuator/metrics.html#actuator.metrics.export.simple
+  # Prometheus wird genutzt in extras\compose\prometheus+grafana
+  simple.metrics.export.enabled: false
+
+  # https://docs.spring.io/spring-boot/4.0/appendix/application-properties/index.html#application-properties.actuator.management.zipkin.tracing.export.enabled
+  tracing.export.zipkin.enabled: true
+
+# ==============================================================================
+# L o g g i n g
+# ==============================================================================
+logging:
+  file:
+    name: /tmp/application.log
+  logback.rollingpolicy:
+    file-name-pattern: ${LOGFILE}.%d{yyyy-MM-dd}.%i.gz
+    max-file-size: 50MB
+    max-history: 7
+  pattern:
+    console: "%clr(%date{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}){faint} %clr(%5level) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15thread]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %msg%n%wEx"
+    file: "%date{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5level ${PID:- } --- [%thread] %-40.40logger{39} : %m%n%wEx"
+    # https://github.com/micrometer-metrics/micrometer-samples/blob/main/micrometer-samples-boot3-web/src/main/resources/application.properties
+    # file: %5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+  threshold:
+    console: info
+    file: info
+  level:
+    org.springframework.boot.devtools.autoconfigure.ConditionEvaluationDeltaLoggingListener: warn
+    org.springframework.security.core.userdetails.User: error
+    io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor: error
+
+# https://springdoc.org/properties.html
+springdoc:
+  enable-data-rest: false
+  enable-hateoas: false
+  enable-groovy: false
+  enable-kotlin: false
+  show-oauth2-endpoints: true
+  show-spring-cloud-functions: false
+
+# ==============================================================================
+# E i g e n e   P r o p e r t i e s
+# ==============================================================================
+app:
+  # siehe Klasse KeycloakProps
+  keycloak:
+    client-id: spring-client
+    client-secret: aVRTBzGsHGmSTJmty7hCfXxqMAgdkYqA # als System-Property fuer "gradle bootRun" oder "mvn spring-boot:run" oder als Umgebungsvariable fuer "Docker Compose"
+    host: keycloak
+    port: 8443
+    # "issuer-uri" ist Praefix fuer ".../.well-known/openid-configuration"
+    issuer-uri: https://localhost:8880/realms/spring
+
+  #mail:
+  #  from: Theo Test <theo@test.de>
+  #  sales: Maxi Musterfrau <maxi.musterfrau@test.de>
+
+---
+# ==============================================================================
+# K u b e r n e t e s
+# ==============================================================================
+# alternativ: azure_app_service, sap, nomad, heroku
+# https://github.com/spring-projects/spring-boot/blob/main/spring-boot-project/spring-boot/src/main/java/org/springframework/boot/cloud/CloudPlatform.java
+# https://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/cloud/CloudPlatform.html
+spring.config.activate.on-cloud-platform: kubernetes
+management.endpoint.health:
+  access: read_only
+  probes.enabled: true
+  show-details: always
+spring.lifecycle.timeout-per-shutdown-phase: 30s
+
+---
+# ==============================================================================
+# P r o f i l e   " d e v "
+# ==============================================================================
+spring:
+  config.activate.on-profile: dev
+
+  # ==============================================================================
+  # D a t e n b a n k
+  # ==============================================================================
+  datasource:
+    # https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#appendix.application-properties.data
+    # https://github.com/brettwooldridge/HikariCP#frequently-used
+    # https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing
+    # https://stackoverflow.com/questions/51136693/how-to-check-hikaricp-connection-pooling-is-working-or-not-in-java
+    hikari:
+      connection-timeout: 10000 # Default: 30_000 = 30 Sekunden
+      idle-timeout: 120000 # Default: 600_000 = 10 Minuten
+      maximum-pool-size: 3 # Default: 10
+      minimum-idle: 1 # Default: maximumPoolSize
+
+  # ==============================================================================
+  # G r a p h Q L
+  # ==============================================================================
+  graphql:
+    # Pfad fuer GraphiQL: /graphiql
+    graphiql.enabled: true
+    # Pfad für Schema: /graphql/schema
+    schema.printer.enabled: true
+
+  jackson.serialization.indent-output: true
+
+  # ==============================================================================
+  # D a t e n b a n k
+  # ==============================================================================
+  # https://docs.jboss.org/hibernate/orm/current/javadocs/org/hibernate/cfg/AvailableSettings.html
+  # https://docs.jboss.org/hibernate/orm/current/javadocs/org/hibernate/cfg/Environment.html
+  jpa.properties.hibernate:
+    connection.pool_size: 3
+    # https://docs.jboss.org/hibernate/orm/current/introduction/html_single/Hibernate_Introduction.html#logging-generated-sql
+    format_sql: true
+    highlight_sql: true
+    # https://docs.jboss.org/hibernate/orm/current/javadocs/org/hibernate/tool/schema/internal/script/MultiLineSqlScriptExtractor.html
+    #hbm2ddl.import_files_sql_extractor: org.hibernate.tool.schema.internal.script.MultiLineSqlScriptExtractor
+    use_sql_comments: true
+
+  # ==============================================================================
+  # M a i l
+  # ==============================================================================
+  mail:
+    host: localhost
+    port: 1025
+
+  # https://stackoverflow.com/questions/53723613/how-to-set-enableloggingrequestdetails-true-in-spring-boot#answer-62817587
+  mvc.log-request-details: true
+  output.ansi.enabled: always
+
+# ==============================================================================
+# A c t u a t o r
+# ==============================================================================
+management:
+  endpoint:
+    health:
+      access: read_only
+      probes.enabled: true
+      show-details: always
+    shutdown.access: unrestricted
+  info.os.enabled: true
+
+  # JEDER Request wird fuer Tracing aufgezeichnet (statt z.B. 10% der Requests):
+  tracing.sampling.probability: 1
+
+server.tomcat:
+  max-connections: 128
+  threads.max: 96
+
+# ==============================================================================
+# L o g g i n g
+# ==============================================================================
+logging:
+  file.name: /tmp/application.log
+  logback.rollingpolicy:
+    file-name-pattern: ${logging.file.name}.%d{yyyy-MM-dd}.%i.gz
+    max-file-size: 10MB
+    max-history: 3
+  pattern:
+    # %thread protokolliert den Thread-Namen: leer bei Virtual Threads
+    # https://stackoverflow.com/questions/61207226/logging-thread-id-instead-of-thread-name-using-logback
+    console: "%clr(%date{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}){faint} %clr(%5level) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15thread]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %msg%n%wEx"
+    file: "%date{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5level ${PID:- } --- [%thread] %-40.40logger{39} : %m%n%wEx"
+  threshold:
+    console: trace
+    file: trace
+  level:
+    com.acme: trace
+    org.apache.catalina.authenticator.AuthenticatorBase: debug
+    org.apache.catalina.loader.WebappClassLoaderBase: info
+    org.springframework.boot.availability.ApplicationAvailabilityBean: debug
+    org.springframework.boot.devtools.autoconfigure.ConditionEvaluationDeltaLoggingListener: warn
+    # PersistenceUnit "default" fuer Jakarta Persistence
+    #org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean: debug
+    org.springframework.security.core.userdetails.User: error
+    org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider: debug
+    org.springframework.security.web.access.intercept.RequestMatcherDelegatingAuthorizationManager: debug
+    org.springframework.security.web.server.authorization.AuthorizationWebFilter: trace
+    org.springframework.security.web.FilterChainProxy: debug
+    #org.springframework.security.web.FilterChainProxy: trace
+    org.springframework.web.client.RestTemplate: debug
+    org.springframework.web.reactive.function.client.ExchangeFunctions: trace
+    org.springframework.web.service.invoker.PathVariableArgumentResolver: trace
+    org.springframework.web.service.invoker.RequestHeaderArgumentResolver: trace
+    org.springframework.web.servlet.DispatcherServlet: debug
+    org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver: error
+    org.springframework.web.servlet.mvc.method.annotation.HttpEntityMethodProcessor: debug
+    org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping: debug
+    io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor: error
+
+    # https://thorben-janssen.com/hibernate-logging-guide
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: debug
+    #org.hibernate.orm.jdbc.bind: trace
+    # SQM (= semantic query model) ab Hibernate 6
+    #org.hibernate.orm.query.sqm.ast: debug
+    org.hibernate.SQL_SLOW: warn
+    org.flywaydb.core.internal.sqlscript.DefaultSqlScriptExecutor: debug
+
+    io.qameta.allure.AllureLifecycle: fatal
+    org.junit.jupiter.engine.descriptor.TestInstanceLifecycleUtils: warn
+    org.springframework.boot.test.context.SpringBootTestContextBootstrapper: warn
+    org.springframework.test.context.support.AbstractContextLoader: warn
+    org.springframework.test.context.support.AnnotationConfigContextLoaderUtils: warn
+    org.springframework.test.context.support.DefaultTestContextBootstrapper: warn
+
+---
+# ==============================================================================
+# P r o f i l e   " l o c u s t "
+# ==============================================================================
+spring:
+  config.activate.on-profile: locust
+
+  # ==============================================================================
+  # D a t e n b a n k
+  # ==============================================================================
+  datasource.hikari:
+    connection-timeout: 10000
+    idle-timeout: 120000
+    maximum-pool-size: 15 # Default: 10
+
+  # ==============================================================================
+  # G r a p h Q L
+  # ==============================================================================
+  graphql:
+    graphiql.enabled: false
+    schema.printer.enabled: false
+
+  # ==============================================================================
+  # D a t e n b a n k
+  # ==============================================================================
+  jpa.properties.hibernate:
+    connection.pool_size: 15
+    session.events.log.LOG_QUERIES_SLOWER_THAN_MS: 30
+
+  # ==============================================================================
+  # M a i l
+  # ==============================================================================
+  mail:
+    host: localhost
+    port: 1025
+
+management:
+  # ==============================================================================
+  # A c t u a t o r
+  # ==============================================================================
+  endpoint:
+    health:
+      access: read_only
+      probes.enabled: true
+    shutdown.access: unrestricted
+
+# ==============================================================================
+# L o g g i n g
+# ==============================================================================
+logging:
+  file.name: /tmp/application.log
+  logback.rollingpolicy:
+    file-name-pattern: ${logging.file.name}.%d{yyyy-MM-dd}.%i.gz
+    max-file-size: 10MB
+    max-history: 3
+  pattern:
+    console: "%clr(%date{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}){faint} %clr(%5level) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15thread]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %msg%n%wEx"
+    file: "%date{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5level ${PID:- } --- [%thread] %-40.40logger{39} : %m%n%wEx"
+  threshold:
+    console: info
+    file: info
+  level:
+    com.acme: info
+    org.apache.catalina: info
+    org.springframework: info
+    io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor: error
+    org.hibernate: info
+    org.flywaydb: info

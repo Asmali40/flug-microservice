@@ -1,0 +1,68 @@
+meta {
+  name: Alle Fluege
+  type: graphql
+  seq: 5
+}
+
+post {
+  url: {{graphqlUrl}}
+  body: graphql
+  auth: inherit
+}
+
+headers {
+  Accept: application/graphql-response+json
+}
+
+body:graphql {
+  query {
+    fluege {
+      id
+      nachname
+      kategorie
+      hasNewsletter
+      geburtsdatum
+      homepage
+      geschlecht
+      familienstand
+      interessen
+      adresse {
+        plz
+        ort
+      }
+    }
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.headers['content-type']: eq application/graphql-response+json
+}
+
+tests {
+  test('Body mit den Properties', () => {
+    const body = res.getBody();
+    const { fluege } = body.data;
+    expect(fluege).to.be.an('array').that.is.not.empty;
+    fluege.forEach(flug => {
+      const { id, nachname, kategorie, hasNewsletter, geburtsdatum, homepage, geschlecht, familienstand, adresse } = flug;
+      expect(id).to.be.a('string').that.matches(/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/u);
+      expect(nachname).to.be.a('string').that.is.not.empty;
+      expect(kategorie).to.be.a('number').that.is.gte(0);
+      expect(hasNewsletter).to.be.a('boolean');
+      expect(geburtsdatum).to.be.a('string').that.is.not.empty;
+      expect(homepage).to.be.a('string').that.is.not.empty;
+      expect(geschlecht).to.be.a('string').that.is.not.empty;
+      expect(familienstand).to.be.a('string').that.is.not.empty;
+      expect(adresse).to.be.an('object');
+      const { plz, ort } = adresse;
+      expect(plz).to.be.a('string').that.matches(/^\d{5}/u);
+      expect(ort).to.be.a('string').that.is.not.empty;
+    });
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Health
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{healthUrl}}
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq UP
+  res.body.components.db.status: eq UP
+  res.body.components.diskSpace.status: eq UP
+  res.body.components.livenessState.status: eq UP
+  res.body.components.readinessState.status: eq UP
+  res.body.components.mail.status: eq UP
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

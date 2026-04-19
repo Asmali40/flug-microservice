@@ -1,0 +1,29 @@
+meta {
+  name: Token admin
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{tokenUrl}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "username": "admin",
+      "password": "p"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.headers['content-type']: eq application/json
+  res.body.access_token: isNotEmpty
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

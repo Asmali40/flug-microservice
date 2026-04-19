@@ -1,0 +1,39 @@
+meta {
+  name: flug-v3
+}
+
+auth {
+  mode: oauth2
+}
+
+auth:oauth2 {
+  grant_type: password
+  access_token_url: http://localhost:8880/realms/spring/protocol/openid-connect/token
+  refresh_token_url: 
+  username: admin
+  password: p
+  client_id: spring-client
+  client_secret: aVRTBzGsHGmSTJmty7hCfXxqMAgdkYqA
+  scope: 
+  credentials_placement: body
+  credentials_id: credentials
+  token_placement: header
+  token_header_prefix: Bearer
+  auto_fetch_token: true
+  auto_refresh_token: false
+}
+
+vars:pre-request {
+  baseUrl: https://localhost:8443
+  keycloakUrl: http://localhost:8880
+  realm: spring
+  realmUrl: {{keycloakUrl}}/realms/{{realm}}
+  oidcUrl: {{realmUrl}}/protocol/openid-connect
+  oidcTokenUrl: {{oidcUrl}}/token
+  oidcAuthUrl: {{oidcUrl}}/auth
+  authUrl: {{baseUrl}}/auth
+  tokenUrl: {{authUrl}}/token
+  apiUrl: {{baseUrl}}/api
+  ~baseUrl: http://localhost:8080
+  ~keycloakUrl: https://localhost:8843
+}

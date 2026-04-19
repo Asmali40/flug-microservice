@@ -1,0 +1,61 @@
+meta {
+  name: Nicht-vorhandener Flug ändern
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{apiUrl}}/:id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: ffffffff-ffff-ffff-ffff-ffffffffffff
+}
+
+headers {
+  ~If-Match: "0"
+}
+
+body:json {
+  {
+    "name": "Post",
+    "baujahr": "2023-01-01",
+    "kapazitaet": 5000,
+    "typ": "X",
+    "hafen": {
+      "name": "Hamburg",
+      "land": "Deutschland"
+    },
+    "crewList": [
+      {
+        "vorname": "Murat",
+        "nachname": "Yahsi",
+        "rolle": "Kapitaen"
+      },
+      {
+        "vorname": "Ahmet",
+        "nachname": "Yilmaz",
+        "rolle": "Matrose"
+      }
+    ],
+    "ausstattungen": [
+      "GPS",
+      "POOL",
+      "RADAR"
+    ],
+    "username": "user",
+    "password": "p"
+  }
+}
+
+assert {
+  res.status: eq 404
+  res.body: isEmpty
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

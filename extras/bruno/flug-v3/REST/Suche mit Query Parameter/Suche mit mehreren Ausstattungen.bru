@@ -1,0 +1,45 @@
+meta {
+  name: Suche mit mehreren Ausstattungen
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{apiUrl}}?ausstattung=GPS&ausstattung=RADAR
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ausstattung: GPS
+  ausstattung: RADAR
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.headers['content-type']: eq application/json
+  res.body.content: isArray
+  res.body.content: isNotEmpty
+}
+
+tests {
+  test('Body: Interessen mit  "L" und "S" sowie ID vorhanden', () => {
+    res.getBody()
+      .content
+      .forEach(flug => {
+        const { interessen, id } = flug;
+        expect(interessen).to.be.an('array').that.includes('L');
+        expect(interessen).to.be.an('array').that.includes('S');
+        expect(id).to.be.a('string').that.matches(/[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/u);
+      });
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

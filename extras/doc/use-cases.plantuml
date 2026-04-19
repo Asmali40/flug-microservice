@@ -1,0 +1,21 @@
+@startuml UseCases
+
+left to right direction
+
+actor Flug
+actor Admin
+
+rectangle flug {
+    Flug --> (Flug suchen)
+    Flug --> (Flug anzeigen)
+
+    Admin --> (Flug suchen)
+    Admin --> (Flug anzeigen)
+    Admin --> (Flug anlegen)
+    Admin --> (Flug aktualisieren)
+    Admin --> (Flug löschen)
+}
+
+footer (c) Jürgen Zimmermann
+
+@enduml

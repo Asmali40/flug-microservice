@@ -1,0 +1,44 @@
+meta {
+  name: Neuer Flug mit bereits existierender Email
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{apiUrl}}
+  body: json
+  auth: inherit
+}
+
+headers {
+  ~: 
+}
+
+body:json {
+  {
+    "typ": "L",
+    "startOrt": "FRA",
+    "zielOrt": "IST",
+    "abflugZeit": "2026-03-01T10:15:00",
+    "ankunftZeit": "2026-03-01T14:05:00",
+    "flugzeug": {
+      "hersteller": "Airbus",
+      "modell": "A320",
+      "sitzplaetze": 180,
+      "reichweiteKm": 6100
+    }
+  }
+  
+}
+
+assert {
+  res.status: eq 422
+  res.headers['content-type']: eq application/problem+json
+  res.body.detail: isString
+  res.body.detail: contains Emailadresse
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

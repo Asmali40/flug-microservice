@@ -1,0 +1,91 @@
+' Copyright (C) 2025 - present Juergen Zimmermann, Hochschule Karlsruhe
+'
+' This program is free software: you can redistribute it and/or modify
+' it under the terms of the GNU General Public License as published by
+' the Free Software Foundation, either version 3 of the License, or
+' (at your option) any later version.
+'
+' This program is distributed in the hope that it will be useful,
+' but WITHOUT ANY WARRANTY; without even the implied warranty of
+' MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+' GNU General Public License for more details.
+'
+' You should have received a copy of the GNU General Public License
+' along with this program. If not, see <https://www.gnu.org/licenses/>.
+@startuml
+
+' Internet-Verbindung erforderlich
+' https://github.com/tmorin/plantuml-libs
+' https://github.com/tmorin/plantuml-libs/blob/master/distribution/fontawesome-6/Regular/README.md
+' https://github.com/tmorin/plantuml-libs/blob/master/distribution/fontawesome-6/Solid/README.md
+' https://fontawesome.com/icons
+' alternativ: https://github.com/johthor/DomainStory-PlantUML
+
+!$Story_Layout = "top-to-bottom"
+
+!include https://raw.githubusercontent.com/tmorin/plantuml-libs/master/distribution/domainstorytelling/single.puml
+
+Title("Einkauf in einem Online-Shop")
+
+include("domainstorytelling/Actor/User")
+include("domainstorytelling/Actor/Users")
+
+include("fontawesome-6/Solid/Laptop")
+include("fontawesome-6/Solid/CartShopping")
+include("fontawesome-6/Solid/List")
+include("fontawesome-6/Solid/ShieldHalved")
+include("fontawesome-6/Solid/At")
+include("fontawesome-6/Solid/TriangleExclamation")
+include("fontawesome-6/Solid/Box")
+include("fontawesome-6/Solid/Check")
+include("fontawesome-6/Solid/EuroSign")
+include("fontawesome-6/Solid/CreditCard")
+
+User("flug", "flug/in")
+Users("versandabteilung", "Versandabteilung")
+
+CartShopping("artikel", "Artikel")
+Laptop("shop", "Online-Shop")
+TriangleExclamation("zahlungsanforderung", "Zahlungsanforderung")
+Laptop("zahlungsdienstleister", "Zahlungsdienstleister")
+EuroSign("betrag", "Zu zahlender Betrag")
+Check("erfolgreiche_zahlung", "Erfolgreiche Zahlung")
+CreditCard("kreditinstitut", "Kreditinstitut")
+At("bestellbestaetigung", "Bestellbestätigung")
+List("bestellung", "Bestellung")
+Box("verpacktes_paket", "Verpacktes Paket")
+Laptop("versanddienstleister", "Versanddienstleister")
+At("versandbestaetigung", "Versandbestätigung")
+Box("paket", "Paket")
+
+flug -up-> artikel : Activity("1", "bestellt")
+artikel -right-> shop
+
+shop -right-> zahlungsanforderung : Activity("2", "sendet")
+zahlungsanforderung --> zahlungsdienstleister
+zahlungsdienstleister --> betrag : Activity("3", "abbuchen")
+betrag --> kreditinstitut
+
+zahlungsdienstleister -up-> erfolgreiche_zahlung : Activity("4", "informiert über")
+erfolgreiche_zahlung -up-> shop
+erfolgreiche_zahlung -[hidden]right-> zahlungsanforderung
+
+shop --> bestellbestaetigung : Activity("5", "sendet")
+bestellbestaetigung -left-> flug
+
+shop -down-> bestellung : Activity("6", "übergibt")
+bestellung -[hidden]right-> zahlungsanforderung
+bestellung -[hidden]left-> bestellbestaetigung
+versandabteilung -[hidden]left-> bestellbestaetigung
+bestellung --> versandabteilung
+
+versandabteilung --> verpacktes_paket : Activity("7", "übergibt")
+verpacktes_paket --> versanddienstleister
+versandabteilung -left-> versandbestaetigung : Activity("8", "sendet")
+versandbestaetigung -left-> flug
+paket -right[hidden]-> versandbestaetigung
+
+versanddienstleister -left-> paket : Activity("8", "liefert")
+paket -up-> flug
+
+@enduml

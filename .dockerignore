@@ -1,0 +1,12 @@
+.allure/
+.git/
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+build
+extras
+target
+src/main/resources/private-key.pem
+src/test

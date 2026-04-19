@@ -1,0 +1,117 @@
+' Copyright (C) 2025 - present Juergen Zimmermann
+'
+' This program is free software: you can redistribute it and/or modify
+' it under the terms of the GNU General Public License as published by
+' the Free Software Foundation, version 3 or (at your option) any later version.
+'
+@startuml FlugWriteController
+
+skinparam classAttributeIconSize 0
+
+package org.springframework {
+    package stereotype {
+        annotation Controller
+    }
+    package web.bind.annotation {
+        annotation RequestMapping
+        annotation PostMapping
+        annotation PutMapping
+        annotation DeleteMapping
+        annotation PathVariable
+        annotation RequestBody
+        annotation ExceptionHandler
+        annotation ResponseStatus
+    }
+    package validation.annotation {
+        annotation Validated
+    }
+    package http {
+        class ResponseEntity<T>
+    }
+    package http.converter {
+        class HttpMessageNotReadableException
+    }
+    package web {
+        class ErrorResponse
+        class MethodArgumentNotValidException
+    }
+}
+
+package jakarta.servlet.http {
+    class HttpServletRequest
+}
+
+package jakarta.validation.groups {
+    interface Default
+}
+
+package java.net {
+    class URI
+}
+
+package java.util {
+    class UUID
+}
+
+package org.slf4j {
+    interface Logger
+    class LoggerFactory
+}
+
+package com.acme.flug {
+    package controller {
+        class FlugDTO {
+        }
+        class FlugMapper
+        class UriHelper
+        class StableValue<T>
+    }
+
+    package entity {
+        class Flug << entity >>
+    }
+
+    package service {
+        class FlugWriteService << control >> << @Service >>
+    }
+
+    package controller #DDDDDD {
+        class FlugWriteController << boundary >> << @Controller >> << @RequestMapping >> {
+            ~ @PostMapping post(@RequestBody flugDTO: FlugDTO, @Request request: HttpServletRequest): ResponseEntity<Void>
+            ~ @PutMapping put(@PathVariable id: UUID, @RequestBody flugDTO: FlugDTO): void
+            ~ @DeleteMapping deleteById(@PathVariable id: UUID): void
+            + @ExceptionHandler onConstraintViolations(ex: MethodArgumentNotValidException): ErrorResponse
+            + @ExceptionHandler onMessageNotReadable(ex: HttpMessageNotReadableException): ErrorResponse
+        }
+
+        FlugWriteController o-right-> "1" FlugWriteService : service
+        FlugWriteController o-right-> "1" FlugMapper : mapper
+        FlugWriteController o-right-> "1" UriHelper : uriHelper
+
+        FlugWriteController ..> FlugDTO
+        FlugWriteController ..> HttpServletRequest
+        FlugWriteController ..> ResponseEntity
+        FlugWriteController ..> UUID
+        FlugWriteController ..> ErrorResponse
+        FlugWriteController ..> MethodArgumentNotValidException
+        FlugWriteController ..> HttpMessageNotReadableException
+        FlugWriteController ..> URI
+
+        FlugWriteController .up.> Controller
+        FlugWriteController .up.> RequestMapping
+        FlugWriteController .up.> PostMapping
+        FlugWriteController .up.> PutMapping
+        FlugWriteController .up.> DeleteMapping
+        FlugWriteController .up.> RequestBody
+        FlugWriteController .up.> PathVariable
+        FlugWriteController .up.> ExceptionHandler
+        FlugWriteController .up.> ResponseStatus
+        FlugWriteController .up.> Validated
+    }
+}
+
+hide empty members
+
+footer (c) Juergen Zimmermann
+
+@enduml

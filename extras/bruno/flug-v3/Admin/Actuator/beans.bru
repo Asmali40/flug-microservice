@@ -1,0 +1,22 @@
+meta {
+  name: beans
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{actuatorUrl}}/beans
+  body: none
+  auth: inherit
+}
+
+assert {
+  res.status: eq 200
+  res.body.contexts.flug.beans: isJson
+  res.body.contexts.flug.beans: isNotEmpty
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,36 @@
+meta {
+  name: Alle
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{apiUrl}}
+  body: none
+  auth: inherit
+}
+
+headers {
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.headers['content-type']: eq application/json
+  res.body.content: isArray
+  res.body.content: isNotEmpty
+}
+
+tests {
+  test('ID vorhanden', () => {
+    res.getBody()
+      .content
+      .map(flug => flug.id)
+      .forEach(id => expect(id).to.be.a('string').that.matches(/[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}/u));
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

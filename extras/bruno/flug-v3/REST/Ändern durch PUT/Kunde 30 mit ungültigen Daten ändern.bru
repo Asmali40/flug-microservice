@@ -1,0 +1,68 @@
+meta {
+  name: Flug 30 mit ungültigen Daten ändern
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{apiUrl}}/:id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 00000000-0000-0000-0000-000000000030
+}
+
+headers {
+  If-Match: "0"
+}
+
+body:json {
+  {
+    "name": "Post",
+    "baujahr": "2023-01-01",
+    "kapazitaet": 5000,
+    "typ": "X",
+    "hafen": {
+      "name": "Hamburg",
+      "land": "Deutschland"
+    },
+    "crewList": [
+      {
+        "vorname": "Murat",
+        "nachname": "Yahsi",
+        "rolle": "Kapitaen"
+      },
+      {
+        "vorname": "Ahmet",
+        "nachname": "Yilmaz",
+        "rolle": "Matrose"
+      }
+    ],
+    "ausstattungen": [
+      "GPS",
+      "POOL",
+      "RADAR"
+    ],
+    "username": "user",
+    "password": "p"
+  }
+}
+
+assert {
+  res.status: eq 422
+  res.headers['content-type']: eq application/problem+json
+  res.body.status: eq 422
+  res.body.title: eq Unprocessable Content
+  res.body.detail: contains nachname
+  res.body.detail: contains email
+  res.body.detail: contains kategorie
+  res.body.detail: contains geburtsdatum
+  res.body.instance: eq /api/00000000-0000-0000-0000-000000000030
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,28 @@
+meta {
+  name: prometheus
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{actuatorUrl}}/prometheus
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test('flug in body', () => {
+    const body = res.getBody({ raw: true });
+    expect(body).to.be.not.empty;
+    expect(body).to.include('flug');
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

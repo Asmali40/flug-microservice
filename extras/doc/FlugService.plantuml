@@ -1,0 +1,61 @@
+' Copyright (C) 2025 - present
+' Juergen Zimmermann, Hochschule Karlsruhe
+'
+@startuml FlugService
+
+skinparam classAttributeIconSize 0
+
+package org.springframework.stereotype {
+    annotation Service
+}
+
+package org.slf4j {
+    interface Logger
+    class LoggerFactory
+}
+
+package java.util {
+    class UUID
+    interface Collection<T>
+    interface List<T>
+    interface Map<K,V>
+}
+
+package com.acme.flug {
+    package entity {
+        class Flug << entity >>
+    }
+
+    package repository {
+        class FlugRepository << gateway >>
+    }
+
+    package service #DDDDDD {
+        class NotFoundException
+
+        class FlugService << control >> << @Service >> {
+            + findById(id: UUID): Flug
+            + find(suchparameter: Map<String, List<String>>): Collection<Flug>
+            + findAll(): List<Flug>
+        }
+
+        FlugService o-right-> FlugRepository : repo
+
+        FlugService ..> Flug
+        FlugService ..> UUID
+        FlugService ..> Map
+        FlugService ..> List
+        FlugService ..> Collection
+
+        FlugService ..> Logger
+        FlugService ..> LoggerFactory
+
+        FlugService ..> NotFoundException
+    }
+}
+
+hide empty members
+
+footer (c) Juergen Zimmermann
+
+@enduml

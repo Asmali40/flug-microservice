@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "postgres.fullname" . }}-init-scripts
+  namespace: {{ .Values.namespace }}
+data:
+  01-create-tablespace.sql: |
+    CREATE TABLESPACE flugspace LOCATION '/var/lib/postgresql/tablespace';
+    GRANT CREATE ON TABLESPACE flugspace TO flug;
+  02-create-keycloak-db.sql: |
+    CREATE USER keycloak WITH PASSWORD 'keycloak';
+    CREATE DATABASE keycloak OWNER keycloak;
+    GRANT ALL PRIVILEGES ON DATABASE keycloak TO keycloak;

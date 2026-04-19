@@ -1,0 +1,47 @@
+@startuml Komponenten
+
+package com.acme.flug #DDDDDD {
+    package controller <<boundary>> #FFFFFF {
+        [@RestController\nFlugController] as FlugController
+        [@Controller\nFlugWriteController] as FlugWriteController
+    }
+
+    package service <<control>> #FFFFFF {
+        [@Service\nFlugService] as FlugService
+        [@Service\nFlugWriteService] as FlugWriteService
+    }
+
+    package repository <<control>> #FFFFFF {
+        [FlugRepository]
+        [MockDB]
+    }
+
+    package entity <<entity>> #FFFFFF {
+        [Flug]
+    }
+}
+
+cloud {
+    [RESTClient]
+}
+
+RESTClient ~~> FlugController
+RESTClient ~~> FlugWriteController
+
+FlugController --> FlugService
+FlugWriteController --> FlugWriteService
+
+FlugService --> FlugRepository
+FlugWriteService --> FlugRepository
+
+FlugRepository --> MockDB
+
+FlugController ..> Flug
+FlugWriteController ..> Flug
+FlugService ..> Flug
+FlugWriteService ..> Flug
+FlugRepository ..> Flug
+
+footer (c) Jürgen Zimmermann
+
+@enduml

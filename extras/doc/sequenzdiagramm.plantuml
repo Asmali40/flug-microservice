@@ -1,0 +1,17 @@
+@startuml Sequenzdiagramm
+
+actor Admin
+
+boundary FlugController
+control FlugService
+control FlugRepository
+database MockDB
+
+Admin -> FlugController : GET /fluege/{id}
+FlugController -> FlugService : findById(id)
+FlugService -> FlugRepository : findById(id)
+FlugRepository -> MockDB : Zugriff auf Mock-Daten
+
+footer (c) Jürgen Zimmermann
+
+@enduml

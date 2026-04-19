@@ -1,0 +1,57 @@
+meta {
+  name: Neuer Flug ohne Benutzerdaten
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{apiUrl}}
+  body: json
+  auth: inherit
+}
+
+headers {
+  ~:
+}
+
+body:json {
+  {
+    "name": "Titanic-New",
+    "baujahr": "2023-01-01",
+    "kapazitaet": 5000,
+    "typ": "X",
+    "hafen": {
+      "name": "Hamburg",
+      "land": "Deutschland"
+    },
+    "crewList": [
+      {
+        "vorname": "Murat",
+        "nachname": "Yahsi",
+        "rolle": "Kapitaen"
+      },
+      {
+        "vorname": "Ahmet",
+        "nachname": "Yilmaz",
+        "rolle": "Matrose"
+      }
+    ],
+    "ausstattungen": [
+      "GPS",
+      "POOL",
+      "RADAR"
+    ]
+  }
+}
+
+assert {
+  res.status: eq 422
+  res.headers['content-type']: eq application/problem+json
+  res.body.detail: isString
+  res.body.detail: contains password:
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

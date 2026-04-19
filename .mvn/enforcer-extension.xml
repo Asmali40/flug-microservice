@@ -1,0 +1,42 @@
+<!--
+    Copyright (C) 2024 - present Juergen Zimmermann, Hochschule Karlsruhe
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program. If not, see <https://www.gnu.org/licenses/>.
+-->
+
+<extension>
+    <executions>
+        <execution>
+            <id>maven-enforcer-extension</id>
+            <phase>validate</phase>
+            <configuration>
+                <!-- https://maven.apache.org/enforcer/enforcer-rules/index.html -->
+                <rules>
+                    <requireJavaVersion>
+                        <version>[25.0.1,26.0.0)</version>
+                    </requireJavaVersion>
+                    <requireMavenVersion>
+                        <version>[3.9.11,4.0)</version>
+                    </requireMavenVersion>
+                    <!--
+                    <requirePluginVersions>
+                        <banSnapshots>false</banSnapshots>
+                    </requirePluginVersions>
+                    -->
+                    <banDuplicatePomDependencyVersions/>
+                </rules>
+            </configuration>
+        </execution>
+    </executions>
+</extension>

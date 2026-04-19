@@ -1,0 +1,50 @@
+meta {
+  name: Neuer Flug mit ungültigen Daten
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{apiUrl}}
+  body: json
+  auth: inherit
+}
+
+headers {
+  ~: 
+}
+
+body:json {
+  {
+    "typ": "L",
+    "startOrt": "FRA",
+    "zielOrt": "IST",
+    "abflugZeit": "2026-03-01T10:15:00",
+    "ankunftZeit": "2026-03-01T14:05:00",
+    "username": "efe",
+    "flugzeug": {
+      "hersteller": "Airbus",
+      "modell": "A320",
+      "sitzplaetze": -180,
+      "reichweiteKm": 6100
+    }
+  }
+  
+}
+
+assert {
+  res.status: eq 422
+  res.headers['content-type']: eq application/problem+json
+  res.body.detail: isString
+  res.body.detail: contains nachname: muss
+  res.body.detail: contains email: muss
+  res.body.detail: contains kategorie: muss
+  res.body.detail: contains geburtsdatum: muss
+  res.body.detail: contains interessen: darf
+  res.body.detail: contains adresse.plz: muss
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

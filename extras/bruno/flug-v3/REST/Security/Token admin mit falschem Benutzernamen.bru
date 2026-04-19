@@ -1,0 +1,27 @@
+meta {
+  name: Token admin mit falschem Benutzernamen
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{tokenUrl}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "username": "FALSCHER_BENUTZERNAME",
+      "password": "p"
+  }
+}
+
+assert {
+  res.status: eq 401
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

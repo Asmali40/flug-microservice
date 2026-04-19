@@ -1,0 +1,57 @@
+meta {
+  name: Flug 30 ändern
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{apiUrl}}/:id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 00000000-0000-0000-0000-000000000030
+}
+
+headers {
+  If-Match: "0"
+}
+
+body:json {
+  {
+    "version": 0,
+    "typ": "L",
+    "startOrt": "Berlin",
+    "zielOrt": "Paris",
+    "abflugZeit": "2026-02-10T09:30:00",
+    "ankunftZeit": "2026-02-10T11:45:00",
+    "flugzeug": {
+      "hersteller": "Boeing",
+      "modell": "737-800",
+      "sitzplaetze": 189,
+      "reichweiteKm": 5436.0
+    },
+    "passagiere": [
+      {
+        "vorname": "Anna",
+        "nachname": "Meyer",
+        "geburtsdatum": "1990-05-12",
+        "sitzplatz": "12A"
+      }
+    ]
+  }
+  
+}
+
+assert {
+  res.status: eq 204
+  res.headers['etag']: matches ^"\d+"$
+  res.body: isString
+  res.body: isEmpty
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

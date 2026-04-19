@@ -1,0 +1,35 @@
+meta {
+  name: Vorhandene ID 0001 Bearer
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{apiUrl}}/:id
+  body: none
+  auth: bearer
+}
+
+params:path {
+  id: 00000000-0000-0000-0000-000000000001
+}
+
+headers {
+  Accept: application/json
+  X-Version: 3.0.0
+}
+
+auth:bearer {
+  token: {{TOKEN}}
+}
+
+assert {
+  res.status: eq 200
+  res.headers['content-type']: eq application/json
+  res.body.id: eq 00000000-0000-0000-0000-000000000001
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
